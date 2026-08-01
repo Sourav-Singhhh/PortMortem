@@ -257,6 +257,7 @@ func HandleExtglobPrefix(s *ParseState, ch byte, value string) (bool, error) {
 		if s.Peek(2) != '?' {
 			tok := NewParseToken(TokenTypeAt, value, "")
 			tok.Extglob = true
+			tok.OutputSet = true
 			s.PushToken(tok)
 			return true, nil
 		}

@@ -56,6 +56,12 @@ type ParseOptions struct {
 	NoNegate            bool
 	MaxExtglobRecursion int
 	NoExtglobRecursion  bool
+	MatchBase           bool
+	Basename            bool
+	Ignore              []string
+	Nocase              bool
+	Debug               bool
+	Format              func(string) string
 }
 
 // ParseToken represents an atomic lexical unit and syntax tree node generated during parsing.
