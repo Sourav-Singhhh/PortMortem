@@ -295,6 +295,13 @@ func (s *ParseState) CurrentToken() *ParseToken {
 
 // PushToken ingests a newly constructed token into the AST slice, merging consecutive plain text tokens to optimize allocation and establishing back-links.
 func (s *ParseState) PushToken(token *ParseToken) {
+	// Accumulate token values into active extglob expressions (parse.js:507-509)
+	if s.ExtglobStack != nil && !s.ExtglobStack.IsEmpty() && token.Type != TokenTypeParen {
+		if ext, ok := s.ExtglobStack.Peek(); ok {
+			ext.Inner += token.Value
+		}
+	}
+
 	if token.Value != "" || token.Output != "" || token.OutputSet {
 		s.Append(token)
 	}

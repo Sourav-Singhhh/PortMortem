@@ -53,12 +53,14 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '(':
-			// TODO: Implement opening parenthesis tracking and extglob initiation (parse.js:788)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleOpenParen(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case ')':
-			// TODO: Implement closing parenthesis tracking, strictBrackets validation, and extglob termination (parse.js:794)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleCloseParen(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '[':
 			if err := HandleOpenBracket(state, tokVal); err != nil {
@@ -81,8 +83,9 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			}
 
 		case '|':
-			// TODO: Implement extglob condition incrementing and pipe tokenization (parse.js:946)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandlePipe(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case ',':
 			if err := HandleBraceTraversal(state, tokVal); err != nil {
@@ -98,22 +101,47 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '?':
-			// TODO: Implement question mark wildcard semantics and extglob initiation (parse.js:1021)
+			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
+				return nil, err
+			} else if handled {
+				continue
+			}
+			// TODO: Implement question mark wildcard semantics (parse.js:1028-1046)
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '!':
-			// TODO: Implement negation prefix interpretation and extglob initiation (parse.js:1053)
+			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
+				return nil, err
+			} else if handled {
+				continue
+			}
+			// TODO: Implement negation prefix interpretation (parse.js:1061)
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '+':
-			// TODO: Implement plus literal interpretation and extglob initiation (parse.js:1071)
+			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
+				return nil, err
+			} else if handled {
+				continue
+			}
+			// TODO: Implement plus literal interpretation (parse.js:1077-1088)
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '@':
-			// TODO: Implement '@' text symbol handling and extglob initiation (parse.js:1095)
+			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
+				return nil, err
+			} else if handled {
+				continue
+			}
+			// TODO: Implement '@' text symbol handling (parse.js:1101)
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '*':
+			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
+				return nil, err
+			} else if handled {
+				continue
+			}
 			// TODO: Implement star/globstar wildcard evaluation, consecutive "/**/" stripping, and regex generation (parse.js:1125)
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
@@ -126,7 +154,9 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 	if err := HandleUnclosedBrackets(state); err != nil {
 		return nil, err
 	}
-	// TODO: Validate unclosed parentheses, evaluate strictBrackets syntax errors, and escape trailing parentheses.
+	if err := HandleUnclosedParens(state); err != nil {
+		return nil, err
+	}
 	if err := HandleUnclosedBraces(state); err != nil {
 		return nil, err
 	}

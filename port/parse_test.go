@@ -49,9 +49,9 @@ func TestParse_ASCIISyntaxTraversalAndBranches(t *testing.T) {
 	if state.Output != expectedOutput {
 		t.Errorf("expected compiled output %q, got %q", expectedOutput, state.Output)
 	}
-	// With bracket foundation active, [] emits distinct bracket tokens separating plain text sequences
-	if len(state.Tokens) != 3 {
-		t.Errorf("expected 3 AST tokens (BOS, text, bracket), got %d tokens", len(state.Tokens))
+	// With bracket and paren foundations active, [], (), and extglob structures emit distinct structural tokens separating plain text sequences
+	if len(state.Tokens) != 5 {
+		t.Errorf("expected 5 AST tokens (BOS, text, parens, brackets), got %d tokens", len(state.Tokens))
 	}
 }
 
