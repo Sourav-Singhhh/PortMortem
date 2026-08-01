@@ -119,15 +119,29 @@ func HandleStar(s *ParseState, value string) error {
 
 	// parse.js:1128-1137: Collapse consecutive stars or stars following a globstar (e.g., ***)
 	if prev != nil && (prev.Type == TokenTypeGlobstar || prev.Star) {
+		star := chars.Star
+		if s.Opts != nil && s.Opts.Bash {
+			star = Globstar(s.Opts, chars)
+		}
+		if s.Opts != nil && s.Opts.Capture {
+			star = "(" + star + ")"
+		}
+
+		if len(s.Output) >= len(prev.Output) {
+			s.Output = s.Output[:len(s.Output)-len(prev.Output)]
+		} else if len(s.Output) >= len(prev.Value) {
+			s.Output = s.Output[:len(s.Output)-len(prev.Value)]
+		}
+
 		prev.Type = TokenTypeStar
 		prev.Star = true
 		prev.Value += value
-		if prev.OutputSet || prev.Output != "" {
-			prev.Output += value
-		}
+		prev.Output = star
+		prev.OutputSet = true
+
 		s.Backtrack = true
 		s.Globstar = true
-		s.Output += value
+		s.Output += prev.Output
 		s.Consume(value, 0)
 		return nil
 	}
@@ -135,7 +149,6 @@ func HandleStar(s *ParseState, value string) error {
 	// parse.js:1145-1244: Second consecutive star evaluating whether to upgrade to globstar (**)
 	if prev != nil && prev.Type == TokenTypeStar {
 		if s.Opts != nil && s.Opts.NoGlobstar {
-			s.Output += value
 			prev.Value += value
 			s.Consume(value, 0)
 			return nil

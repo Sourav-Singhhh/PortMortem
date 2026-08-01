@@ -31,8 +31,8 @@ func cacheKey(pattern string, opts *ParseOptions) string {
 	if opts == nil {
 		return pattern + "|nil"
 	}
-	return fmt.Sprintf("%s|w:%v,p:%v,d:%v,c:%v,i:%v,b:%v,nb:%v,no:%v",
-		pattern, opts.Windows, opts.Posix, opts.Dot, opts.Contains, opts.Nocase, opts.MatchBase, opts.Basename, opts.NoNegate)
+	return fmt.Sprintf("%s|w:%v,ml:%d,pr:%q,cap:%v,d:%v,ba:%v,nx:%v,nxg:%v,fp:%v,un:%v,con:%v,kq:%v,sb:%v,nbk:%v,p:%v,lb:%v,nbr:%v,ngs:%v,ss:%v,rx:%v,nn:%v,mxg:%d,nxgr:%v,mb:%v,bn:%v,ig:%q,nc:%v,dbg:%v",
+		pattern, opts.Windows, opts.MaxLength, opts.Prepend, opts.Capture, opts.Dot, opts.Bash, opts.NoExt, opts.NoExtglob, opts.Fastpaths, opts.Unescape, opts.Contains, opts.KeepQuotes, opts.StrictBrackets, opts.NoBracket, opts.Posix, opts.LiteralBrackets, opts.NoBrace, opts.NoGlobstar, opts.StrictSlashes, opts.Regex, opts.NoNegate, opts.MaxExtglobRecursion, opts.NoExtglobRecursion, opts.MatchBase, opts.Basename, opts.Ignore, opts.Nocase, opts.Debug)
 }
 
 // clearCache resets the compiled matcher storage when upper bounds are exceeded.
@@ -262,11 +262,29 @@ func (m *Matcher) validateDotAndSpecialDirs(path string) bool {
 			}
 		} else if strings.HasPrefix(seg, ".") && !allowDot {
 			// Dotfile segment must be matched by an explicit leading dot in the corresponding pattern segment
+			isDotFilePat := func(s string) bool {
+				return s != "." && s != ".." && (strings.HasPrefix(s, ".") || strings.HasPrefix(s, "\\."))
+			}
 			matchedDot := false
 			if i < len(m.patSegments) {
-				patSeg := m.patSegments[i]
-				if strings.HasPrefix(patSeg, ".") || strings.HasPrefix(patSeg, "\\.") {
+				if isDotFilePat(m.patSegments[i]) {
 					matchedDot = true
+				}
+			}
+			if !matchedDot && idx == -1 && len(m.patSegments) > 0 {
+				if isDotFilePat(m.patSegments[len(m.patSegments)-1]) {
+					matchedDot = true
+				}
+			}
+			if !matchedDot {
+				seenGlobstar := false
+				for _, pSeg := range m.patSegments {
+					if pSeg == "**" {
+						seenGlobstar = true
+					} else if seenGlobstar && isDotFilePat(pSeg) {
+						matchedDot = true
+						break
+					}
 				}
 			}
 			if !matchedDot && !strings.HasPrefix(m.Pattern, ".*") && !strings.HasPrefix(m.Pattern, "**/.*") {
