@@ -32,8 +32,10 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 		// Switch structure precisely reflecting original parse.js syntactic branches
 		switch ch {
 		case '\\':
-			// TODO: Implement character escaping rules and consecutive backslash collapse (parse.js:672)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if !HandleEscape(state, tokVal) {
+				// TODO: Handle escaped character fallthrough inside regex character classes (parse.js:718)
+				state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			}
 
 		case '"':
 			// TODO: Implement double quote state toggling and keepQuotes option evaluation (parse.js:776)
@@ -100,8 +102,7 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		default:
-			// TODO: Implement plain text accumulation and non-special character regex fast-forwarding (parse.js:1114)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			HandlePlainText(state, tokVal)
 		}
 	}
 

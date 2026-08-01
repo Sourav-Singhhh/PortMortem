@@ -143,4 +143,5 @@ type ParseState struct {
 	Stack          *ParserStack
 	BraceStack     *BraceStack
 	ExtglobStack   *ExtglobStack
+	Opts           *ParseOptions
 }

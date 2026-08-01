@@ -84,6 +84,7 @@ func NewParseState(input string, opts *ParseOptions) *ParseState {
 		Stack:        NewParserStack(),
 		BraceStack:   NewBraceStack(),
 		ExtglobStack: NewExtglobStack(),
+		Opts:         opts,
 	}
 }
 

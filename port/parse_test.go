@@ -58,25 +58,28 @@ func TestParse_ASCIISyntaxTraversalAndBranches(t *testing.T) {
 
 func TestParse_MalformedInputsAndStability(t *testing.T) {
 	// Verify that malformed or unmatched structural patterns traverse safely without panicking or hanging
-	malformedPatterns := []string{
-		"[unclosed-bracket",
-		"{unclosed,brace,dots..",
-		"(unclosed-extglob|paren",
-		"trailing-backslash\\",
-		")))(()}{][[][" + `\` + `\\\\\\`,
-		"/*/**/***//",
+	malformedPatterns := []struct {
+		pattern  string
+		expected string
+	}{
+		{"[unclosed-bracket", "[unclosed-bracket"},
+		{"{unclosed,brace,dots..", "{unclosed,brace,dots.."},
+		{"(unclosed-extglob|paren", "(unclosed-extglob|paren"},
+		{"trailing-backslash\\", "trailing-backslash\\\\"},
+		{")))(()}{][[][" + `\` + `\\\\\\`, ")))(()}{][[][" + `\`},
+		{"/*/**/***//", "/*/**/***//"},
 	}
 
-	for _, pattern := range malformedPatterns {
-		state, err := Parse(pattern, nil)
+	for _, tt := range malformedPatterns {
+		state, err := Parse(tt.pattern, nil)
 		if err != nil {
-			t.Errorf("Parse(%q) returned unexpected error during skeleton milestone: %v", pattern, err)
+			t.Errorf("Parse(%q) returned unexpected error: %v", tt.pattern, err)
 		}
 		if !state.EOS() {
-			t.Errorf("Parse(%q) failed to cleanly reach EOS", pattern)
+			t.Errorf("Parse(%q) failed to cleanly reach EOS", tt.pattern)
 		}
-		if state.Consumed != pattern {
-			t.Errorf("Parse(%q) incomplete consumption: got %q, expected %q", pattern, state.Consumed, pattern)
+		if state.Consumed != tt.expected {
+			t.Errorf("Parse(%q) incomplete consumption: got %q, expected %q", tt.pattern, state.Consumed, tt.expected)
 		}
 	}
 }
