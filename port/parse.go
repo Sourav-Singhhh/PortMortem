@@ -71,20 +71,23 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			}
 
 		case '{':
-			// TODO: Implement opening brace tracking and range expansion initiation (parse.js:881)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleOpenBrace(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '}':
-			// TODO: Implement closing brace tracking, dots range expansion evaluation, and backtracking (parse.js:897)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleCloseBrace(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '|':
 			// TODO: Implement extglob condition incrementing and pipe tokenization (parse.js:946)
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case ',':
-			// TODO: Implement comma delimiter tracking inside active brace structures (parse.js:958)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleBraceTraversal(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '/':
 			// TODO: Implement path slash tokenization and leading "./" prefix stripping (parse.js:975)
@@ -124,7 +127,9 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 		return nil, err
 	}
 	// TODO: Validate unclosed parentheses, evaluate strictBrackets syntax errors, and escape trailing parentheses.
-	// TODO: Validate unclosed braces, evaluate strictBrackets syntax errors, and escape trailing braces.
+	if err := HandleUnclosedBraces(state); err != nil {
+		return nil, err
+	}
 
 	return state, nil
 }
