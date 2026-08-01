@@ -156,3 +156,46 @@ func BenchmarkBatchThroughput(b *testing.B) {
 	}
 	b.ReportMetric(float64(matches*b.N)/b.Elapsed().Seconds(), "matches/sec")
 }
+
+func BenchmarkMixedComplexExpressions(b *testing.B) {
+	b.ReportAllocs()
+	pat := "src/{build,test,dist}/**/@(foo|bar)/*.[[:alpha:]]*"
+	input := "src/test/x/y/bar/module.ts"
+	m, _ := Compile(pat, nil)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.Match(input)
+	}
+}
+
+func BenchmarkMalformedPatterns(b *testing.B) {
+	b.ReportAllocs()
+	pat := "foo/[a-/*(bar|{1..5"
+	input := "foo/[a-/bundle.js"
+	m, _ := Compile(pat, nil)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if m != nil {
+			_ = m.Match(input)
+		} else {
+			_, _ = Compile(pat, nil)
+		}
+	}
+}
+
+func BenchmarkConcurrentMatching(b *testing.B) {
+	b.ReportAllocs()
+	pat := "foo/**/@(bar|baz)/*.js"
+	input := "foo/a/b/bar/bundle.js"
+	// Ensure pattern is cached and compiled
+	m, _ := Compile(pat, nil)
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			// Simultaneous evaluation of cached compilation and pre-compiled structural matching
+			cached, _ := Compile(pat, nil)
+			_ = cached.Match(input)
+			_ = m.Match(input)
+		}
+	})
+}
