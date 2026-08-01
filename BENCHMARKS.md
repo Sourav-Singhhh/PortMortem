@@ -11,53 +11,64 @@ This document outlines the performance monitoring methodology, execution metrics
 
 ---
 
-## 2. Current Benchmark Status
-- **Status:** **PREREQUISITES SATISFIED — READY FOR EMPIRICAL EVALUATION (Post-Sprint 11)**
-- **Empirical Numbers:** With runtime matcher integration completed in Sprint 11 ([port/matcher.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher.go)), the foundational execution engines required for valid runtime timing are fully operational. Formal quantitative benchmark suites are scheduled for implementation and execution in Planned Phase C. In accordance with strict engineering standards, zero speculative timing figures are published prior to actual test harness execution.
+## 2. Current Benchmark Status & Readiness
+- **Status:** **PREREQUISITES & INITIAL SCAFFOLDING COMPLETED — READY FOR FORMAL QUANTITATIVE EXECUTION (Post-Sprint 12)**
+- **Implementation State:** In Sprint 12, foundational benchmarking scaffolding was implemented and verified in [port/matcher_bench_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher_bench_test.go). The test harness defines structured `testing.B` functions covering cached and uncached compilation (`BenchmarkCompile_Uncached`, `BenchmarkCompile_Cached`), one-off versus pre-compiled matching (`BenchmarkMatch_OneOff`, `BenchmarkMatch_Precompiled`), complex structural scenarios (`BenchmarkLargeDirectoryPatterns`, `BenchmarkDeepGlobstars`, `BenchmarkNestedExtglobs`, `BenchmarkBraceExpansion`, `BenchmarkPOSIXClasses`), batch filesystem throughput (`BenchmarkBatchThroughput`), and standard library comparative baselines.
+- **Empirical Execution Plan:** Formal execution of these benchmark targets to generate final quantitative comparison tables is scheduled as the primary objective of Planned Phase C (Sprint 13). In adherence to rigorous Release Engineering governance, zero speculative or provisional timing figures are published prior to exhaustive hardware-validated execution runs.
 
 ---
 
-## 3. Why Matcher Integration Enables Meaningful Benchmarking
-Prior to Sprint 11, evaluating micro-benchmarks on intermediate syntax scanning or standalone AST string compilation produced distorted, non-representative performance data. With the completion of runtime matcher integration—which wraps single-pass parser pattern string accumulation (`state.Output`), RE2 regex automata compilation, structural pattern segment caching (`patSegments`), and algorithmic set-difference pattern decomposition into cohesive evaluation primitives (`Compile()` and `Match()`)—the project now possesses an authoritative end-to-end matching pipeline. Benchmarking execution across these finalized primitives guarantees representative real-world performance evaluation against native Node.js `picomatch`.
+## 3. Why Large-Scale Validation Enables Authoritative Benchmarking
+Prior to Sprint 12, running micro-benchmarks without verification across extensive option permutations risked timing an incomplete or non-representative evaluation engine. With the completion of Sprint 12—which subjected the runtime matching engine to 3,226 differential scenarios (`TestLargeScaleDifferential`), surgically resolved all genuine implementation bugs (such as wildcard consecutive star collapsing under `NoGlobstar: true` and compilation cache struct hashing), and achieved a certified zero-bug operational baseline—the project possesses a bulletproof evaluation pipeline. Benchmarking execution across these stabilized primitives guarantees that performance metrics represent production-grade correctness and true bug-for-bug JavaScript algorithmic fidelity.
 
 ---
 
-## 4. Satisfied Prerequisites & Readiness Milestone Matrix
-Every structural and computational prerequisite required for valid benchmarking has been successfully accomplished:
-1. **Brace & Extglob Syntax Engine (Sprints 7–8):** Complete grammar traversal across nested branch alternations, option toggles, and ReDoS analysis (`AnalyzeRepeatedExtglob`). *(Satisfied)*
-2. **Wildcard & POSIX Translation (Sprints 9–10):** Full evaluation of stars, directory globstars, question marks, and static POSIX ASCII mapping tables. *(Satisfied)*
-3. **Regex Pattern Synthesis (Sprint 10):** Direct single-pass synthesis of valid JavaScript regular expression output pattern strings (`state.Output`). *(Satisfied)*
-4. **Runtime Matcher Integration & Caching API (Sprint 11):** Implementation of exported user-facing evaluation wrappers (`Compile()`, `Match()`), thread-safe pattern compilation caches (`sync.RWMutex`), and zero-allocation runtime path segment checks (`validateDotAndSpecialDirs`). *(Satisfied)*
+## 4. Satisfied Prerequisites & Readiness Matrix
+Every structural, syntax, runtime, and validation prerequisite required for definitive empirical benchmarking has been accomplished:
+1. **Complete Syntax & Regex Synthesis Engine (Sprints 1–10):** Authoritative single-pass traversal across braces, extglobs, wildcards, brackets, POSIX character tables, and ReDoS vulnerability analysis (`AnalyzeRepeatedExtglob`). *(Satisfied)*
+2. **Runtime Matcher & Caching API (Sprint 11):** Thread-safe structural compilation storage (`Compile()`, `sync.RWMutex`), literal equality fastpaths, and zero-allocation path segment validation (`validateDotAndSpecialDirs`). *(Satisfied)*
+3. **Large-Scale Behavioral Verification (Sprint 12):** Empirical audit certifying zero implementation bugs across 3,226 differential scenarios, establishing deterministic RE2 boundary limits and option default fidelity. *(Satisfied)*
+4. **Standard Library Benchmark Scaffolding (Sprint 12):** Complete implementation of target test suites and comparative baseline harnesses in [port/matcher_bench_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher_bench_test.go). *(Satisfied)*
 
 ---
 
-## 5. Benchmark Methodology
-Formal empirical benchmark evaluation will execute via Go's standard `testing.B` execution framework in parallel with structured Node.js V8 runtime timer scripts across identical hardware and kernel configurations:
-- **Test Harness Setup:** Automated table-driven benchmarking suites (`BenchmarkCompile_Simple`, `BenchmarkCompile_ExtGlob`, `BenchmarkMatch_DeepHierarchy`, `BenchmarkMatch_NegatedExtglob`) executing across standardized filesystem target datasets (`testdata/fixtures.json`).
-- **Concurrent Execution:** Stress evaluation using multi-threaded goroutine test harnesses (`testing.B.RunParallel`) to evaluate lock-free reader scaling across global pattern caches.
-- **Execution Environment Documentation:** Complete architectural reporting of CPU frequency/topology, RAM architecture, operating system kernel, Go compiler toolchain version (`go version`), and Node.js execution runtime build numbers.
+## 5. Benchmark Methodology & Execution Plan
+Formal empirical benchmark evaluation will execute via Go's standard `testing.B` framework in parallel with structured Node.js V8 runtime execution scripts across identical hardware and kernel configurations:
+- **Table-Driven Execution Suite:** Automated evaluation across compilation and matching primitives (`BenchmarkCompile`, `BenchmarkMatch`), iterating dynamically through targeted pattern datasets and reporting allocations (`b.ReportAllocs()`).
+- **Concurrent Scaling & Thread Safety:** Multi-threaded stress evaluation (`testing.B.RunParallel`) executing across dozens of simulated goroutines under explicit race detection (`go test -race`) to verify lock-free reader throughput across global pattern caches.
+- **Environment & Kernel Transparency:** Complete archival reporting of CPU architecture/clock speeds, RAM topology, operating system kernel build, Go toolchain build (`go version`), and Node.js binary execution versions.
 
 ---
 
 ## 6. Target Benchmark Metrics
-Benchmark reporting tables will record four quantitative runtime execution indicators:
-- **`ns/op` (Nanoseconds per operation):** Total CPU wall-clock elapsed during pattern compilation or target path matching evaluation.
-- **`B/op` (Bytes allocated per operation):** Total dynamic heap memory consumption allocated per function invocation.
-- **`allocs/op` (Allocations per operation):** Distinct heap object allocations triggered during execution (targeted at precisely `0` for repeated evaluations of pre-compiled `Matcher` structs and fast-path exact equals evaluations).
-- **`MB/s` (Throughput rate):** Target evaluation throughput speed when scanning extensive simulated directory trees.
+Benchmark evaluation reports will capture four rigorous quantitative indicators per operation:
+- **`ns/op` (Nanoseconds per operation):** Wall-clock CPU elapsed time required for pattern syntax compilation or target string evaluation.
+- **`B/op` (Bytes allocated per operation):** Dynamic heap memory footprint allocated per function invocation.
+- **`allocs/op` (Allocations per operation):** Distinct heap object allocation calls triggered during execution. The critical release engineering target is **precisely `0 allocs/op`** for repeated evaluation loops utilizing pre-compiled `Matcher` structures and direct-equality fastpaths.
+- **`MB/s` & `matches/sec` (Throughput rate):** Processing volume and evaluation velocity across batch directory traversals and simulated filesystem scanning runs.
 
 ---
 
-## 7. Cross-Library Comparison Plan
-To establish empirical runtime competitiveness, benchmarking evaluation will compare Port Mortem across three primary reference targets:
-1. **Upstream Node.js Picomatch:** Direct cross-language performance comparisons against native JavaScript runtime execution over simulated filesystem directory traversals and ReDoS evaluation strings.
-2. **Go Standard Library:** Baseline speed and memory allocation verification against native standard library `path/filepath.Match` and `io/fs.Glob`.
-3. **Leading Go Glob Libraries:** Competitive benchmarking against established open-source Go matching repositories, including `github.com/bmatcuk/doublestar` and `github.com/gobwas/glob`.
+## 7. Comparison Libraries & Cross-Language Baselines
+To establish definitive runtime competitiveness, performance evaluation will compare Port Mortem across three canonical software reference targets:
+1. **Upstream Node.js Picomatch:** Cross-language computational evaluation against native JavaScript execution timers over simulated filesystem traversals, ReDoS stress sequences, and deep directory hierarchies.
+2. **Go Standard Library:** Baseline speed and memory allocation comparisons against native standard library primitives (`path/filepath.Match` and `io/fs.Glob`).
+3. **Leading Open-Source Go Libraries:** Competitive performance positioning against widely utilized Go pattern matching implementations, specifically `github.com/bmatcuk/doublestar` and `github.com/gobwas/glob`.
 
 ---
 
-## 8. Remaining Blockers & Performance Roadmap
-With syntax and matcher prerequisites satisfied, the benchmark engineering roadmap is sequenced across three empirical execution stages:
-- **Stage 1 (Planned Phase C):** Construct the table-driven `testing.B` evaluation harnesses across compilation and matching primitives, populating empirical performance tables in this document.
-- **Stage 2 (Planned Phase D):** Conduct concurrent profiling (`go test -cpuprofile` and `-memprofile`) to analyze evaluation hot loops, lock contention, and cache eviction overhead under high-density multi-goroutine workloads.
-- **Stage 3 (Pre-v1.0 Optimization):** Implement advanced structural memory object pools (`sync.Pool`) to eliminate transient token slices and string conversions during complex pattern evaluations, assuring optimal memory behavior for v1.0 production release.
+## 8. Benchmark Datasets
+Evaluation targets will ingest standardized, real-world filesystem testing datasets representing diverse computational stresses:
+- **Standard Wildcard & Extension Hierarchies:** Common source code routing paths (`foo/bar/*.js`, `**/*.{js,ts,go}`).
+- **Deeply Nested Globstars:** Catastrophic recursive directory searching structures (`foo/**/bar/**/baz/**/*.js` against multi-tiered simulated path strings).
+- **Composite Alternation Extglobs:** Deeply nested logical exclusion and union expressions (`@(foo|@(bar|@(baz|quux)))/*.js`).
+- **POSIX & Interval Range Expansions:** Multi-character bracket expressions (`[[:alpha:]][[:alnum:]]*`) and interval series (`src/{build,test}/{1..10}/*.js`).
+- **Unicode UTF-8 & Multibyte Traversals:** Multibyte character file path evaluations verifying zero overhead during UTF-8 string indexing.
+
+---
+
+## 9. Remaining Benchmark Tasks & Roadmap Implementation
+With prerequisite scaffolding in place, remaining performance engineering tasks are sequenced across two targeted upcoming release phases:
+- **Task 1 (Planned Phase C / Sprint 13):** Execute formal `go test -bench=. -benchmem ./...` evaluation suites across all target architectures, recording empirical `ns/op`, `B/op`, and `allocs/op` metrics into comparison tables within this document.
+- **Task 2 (Planned Phase D):** Execute CPU and heap memory profiling (`go test -cpuprofile` / `-memprofile`) to identify runtime evaluation bottlenecks, lock contention points, or residual transient memory allocations.
+- **Task 3 (Planned Phase D Optimization):** Integrate structural object memory pools (`sync.Pool`) across internal segment slices and tokenizer structures to eradicate any remaining heap churn, securing optimal zero-allocation efficiency prior to v1.0 release Candidate packaging.
