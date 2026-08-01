@@ -25,17 +25,28 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 		// Convert raw byte to string via byte slice to guarantee uncorrupted reconstruction of multibyte UTF-8 characters
 		tokVal := string([]byte{ch})
 
+		// In parse.js:672, backslash escape handling precedes active character class evaluation (parse.js:718)
+		if ch == '\\' {
+			val, handled := HandleEscape(state, tokVal)
+			if handled {
+				continue
+			}
+			tokVal = val
+		}
+
 		// Architectural checks for active parser states preceding individual syntax switching:
-		// TODO: Handle active regex character class traversal when state.Brackets > 0 (parse.js:718)
+		if handled, err := HandleBracketTraversal(state, tokVal); err != nil {
+			return nil, err
+		} else if handled {
+			continue
+		}
 		// TODO: Handle active quoted string literal traversal when state.Quotes == 1 (parse.js:765)
 
 		// Switch structure precisely reflecting original parse.js syntactic branches
 		switch ch {
 		case '\\':
-			if !HandleEscape(state, tokVal) {
-				// TODO: Handle escaped character fallthrough inside regex character classes (parse.js:718)
-				state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
-			}
+			// Backslashes are handled at parse.js:672 prior to active character class evaluation above
+			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '"':
 			// TODO: Implement double quote state toggling and keepQuotes option evaluation (parse.js:776)
@@ -50,12 +61,14 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '[':
-			// TODO: Implement opening square bracket tracking, POSIX classes, and bracket matching (parse.js:814)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleOpenBracket(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case ']':
-			// TODO: Implement closing square bracket tracking, literalBrackets evaluation, and class matching (parse.js:829)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleCloseBracket(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '{':
 			// TODO: Implement opening brace tracking and range expansion initiation (parse.js:881)
@@ -107,7 +120,9 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 	}
 
 	// Post-processing and unclosed delimiter cleanup corresponding to parse.js:1286-1300
-	// TODO: Validate unclosed brackets, evaluate strictBrackets syntax errors, and escape trailing square brackets.
+	if err := HandleUnclosedBrackets(state); err != nil {
+		return nil, err
+	}
 	// TODO: Validate unclosed parentheses, evaluate strictBrackets syntax errors, and escape trailing parentheses.
 	// TODO: Validate unclosed braces, evaluate strictBrackets syntax errors, and escape trailing braces.
 

@@ -238,7 +238,7 @@ func TestParseLiterals_BracketFallthrough(t *testing.T) {
 	// When state.Brackets > 0, HandleEscape must return false to allow fallthrough to character class traversal
 	state := NewParseState("test", nil)
 	state.Brackets = 1
-	handled := HandleEscape(state, "\\")
+	_, handled := HandleEscape(state, "\\")
 	if handled {
 		t.Errorf("HandleEscape must return false when state.Brackets > 0 to permit fallthrough")
 	}

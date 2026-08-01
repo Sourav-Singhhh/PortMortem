@@ -15,25 +15,25 @@ func IsNonSpecialChar(b byte) bool {
 
 // HandleEscape executes backslash escape handling, consecutive backslash collapse, and escaped character consumption
 // in strict adherence to original parse.js:672-711 control flow.
-// It returns true if the escaped token was fully handled or discarded, and false if execution must fall through
-// to active regex character class evaluation (when state.Brackets > 0).
-func HandleEscape(s *ParseState, value string) bool {
+// It returns the mutated value string along with true if the escaped token was fully handled or discarded, and false if
+// execution must fall through to active regex character class evaluation (when state.Brackets > 0).
+func HandleEscape(s *ParseState, value string) (string, bool) {
 	next := s.Peek(1)
 
 	// In standard glob evaluation, escaping path slashes (/), dots (.), and semicolons (;) discards the backslash (parse.js:675-681)
 	if next == '/' && (s.Opts == nil || !s.Opts.Bash) {
-		return true
+		return value, true
 	}
 
 	if next == '.' || next == ';' {
-		return true
+		return value, true
 	}
 
 	// Trailing backslash terminating the string emits as a literal escaped backslash "\\" (parse.js:683-687)
 	if s.EOS() {
 		value += "\\"
 		s.PushToken(NewParseToken(TokenTypeText, value, ""))
-		return true
+		return value, true
 	}
 
 	// Collapse consecutive backslashes to reduce potential for denial of service exploits (parse.js:689-699)
@@ -67,11 +67,11 @@ func HandleEscape(s *ParseState, value string) bool {
 	// Outside regex character classes, emit the text token and return true (parse.js:707-710)
 	if s.Brackets == 0 {
 		s.PushToken(NewParseToken(TokenTypeText, value, ""))
-		return true
+		return value, true
 	}
 
 	// When state.Brackets > 0, return false to enable fallthrough into character class evaluation in future milestones
-	return false
+	return value, false
 }
 
 // HandlePlainText executes plain text literal accumulation, regex anchor character escaping, and fast-forward

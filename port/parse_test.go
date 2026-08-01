@@ -41,18 +41,17 @@ func TestParse_ASCIISyntaxTraversalAndBranches(t *testing.T) {
 	if !state.EOS() {
 		t.Errorf("parser loop failed to terminate cleanly at EOS on ASCII syntax stream")
 	}
-	if state.Consumed != input {
-		t.Errorf("expected consumed text accumulator %q, got %q", input, state.Consumed)
+	expectedConsumed := `\"()[\].{}/|,?!+@*abcdef`
+	if state.Consumed != expectedConsumed {
+		t.Errorf("expected consumed text accumulator %q, got %q", expectedConsumed, state.Consumed)
 	}
-	if state.Output != input {
-		t.Errorf("expected compiled output fallback %q, got %q", input, state.Output)
+	expectedOutput := `\"()\[\].{}/|,?!+@*abcdef`
+	if state.Output != expectedOutput {
+		t.Errorf("expected compiled output %q, got %q", expectedOutput, state.Output)
 	}
-	// Because all tokens currently emit as placeholder TokenTypeText, PushToken merges them into 1 text token after BOS
-	if len(state.Tokens) != 2 {
-		t.Errorf("expected consolidated placeholder AST tokens (BOS + merged Text), got %d tokens", len(state.Tokens))
-	}
-	if state.Tokens[1].Value != input {
-		t.Errorf("merged text token value expected %q, got %q", input, state.Tokens[1].Value)
+	// With bracket foundation active, [] emits distinct bracket tokens separating plain text sequences
+	if len(state.Tokens) != 3 {
+		t.Errorf("expected 3 AST tokens (BOS, text, bracket), got %d tokens", len(state.Tokens))
 	}
 }
 
@@ -62,11 +61,11 @@ func TestParse_MalformedInputsAndStability(t *testing.T) {
 		pattern  string
 		expected string
 	}{
-		{"[unclosed-bracket", "[unclosed-bracket"},
+		{"[unclosed-bracket", "\\[unclosed-bracket"},
 		{"{unclosed,brace,dots..", "{unclosed,brace,dots.."},
 		{"(unclosed-extglob|paren", "(unclosed-extglob|paren"},
 		{"trailing-backslash\\", "trailing-backslash\\\\"},
-		{")))(()}{][[][" + `\` + `\\\\\\`, ")))(()}{][[][" + `\`},
+		{")))(()}{][[][" + `\` + `\\\\\\`, ")))(()}{][\\[]\\[\\"},
 		{"/*/**/***//", "/*/**/***//"},
 	}
 
