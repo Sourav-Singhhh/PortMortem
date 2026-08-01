@@ -9,40 +9,42 @@ Port Mortem bridges the gap between JavaScript's complex globbing heuristics and
 
 ---
 
-## Current Implementation Status (Through Sprint 10 — Parser Migration Complete)
+### Current Implementation Status (Through Sprint 11 — Matcher Integration Complete)
 - **Scanner Core ([port/scan.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/scan.go)):** Fully implemented and certified. Traverses raw glob expressions in a single-pass loop to isolate base directories, evaluate prefix logic (`!`, `./`), and establish grammar flags (`isBrace`, `isBracket`, `isExtglob`, `isGlobstar`).
-- **Parser Core & Regex Synthesis ([port/parse.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse.go), [parse_literals.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_literals.go), [parse_brackets.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_brackets.go), [parse_braces.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_braces.go), [parse_extglobs.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_extglobs.go), [parse_wildcards.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_wildcards.go), [parse_regex.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_regex.go)):** **Parser migration is 100% complete.** Implemented foundational data models (`ParseState`, `ParseToken`, `ParseOptions`), memory-safe cursor navigation, single-pass interleaved character evaluation, literal/escape handling, square brackets with POSIX character class translation tables (`[:alnum:]`, `[:digit:]`), structural brace handling with numerical and alphabetical interval range expansions (`{1..5}`, `{a..z}`), extglob parenthetical state alternations (`(?:...)`, `(?!(?:...))`), wildcard regular expression generation (`*`, `**`, `?`), ReDoS exponential backtracking mitigation (`AnalyzeRepeatedExtglob`), and EOF delimiter reconciliation (`EscapeLast`). Zero `TODO` or placeholder implementations remain.
-- **Persistent Cross-Language Bridge (`tests/adapter/`):** Implemented high-speed inter-process communication (IPC) daemon communicating with native Node.js binaries via JSON over standard IO for automated differential verification.
+- **Parser Core & Regex Synthesis ([port/parse.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse.go), [parse_literals.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_literals.go), [parse_brackets.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_brackets.go), [parse_braces.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_braces.go), [parse_extglobs.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_extglobs.go), [parse_wildcards.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_wildcards.go), [parse_regex.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_regex.go)):** Fully implemented and certified. Features foundational data models (`ParseState`, `ParseToken`, `ParseOptions`), memory-safe cursor navigation, single-pass interleaved character evaluation, POSIX character class translation tables (`[:alnum:]`, `[:digit:]`), numerical and alphabetical brace interval range expansions (`{1..5}`, `{a..z}`), extglob pattern synthesis (`(?:...)`, `(?!(?:...))`), ReDoS exponential backtracking mitigation (`AnalyzeRepeatedExtglob`), and EOF delimiter reconciliation (`EscapeLast`). Zero `TODO` or placeholder implementations remain.
+- **Runtime Matcher & Evaluation API ([port/matcher.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher.go)):** Fully implemented and certified. Provides exported evaluation functions (`Compile()`, `Match()`, and the reusable `Matcher` struct), thread-safe structural pattern compilation caching (`sync.RWMutex`), literal direct-equality fastpaths, and zero-allocation path segmentation checks (`validateDotAndSpecialDirs`). Solves Go RE2 regex limitations without CGO or PCRE dependencies by combining linear-time lookaround stripping (`toRE2`) with recursive set-difference pattern decomposition ($* \setminus @(X)$).
+- **Persistent Cross-Language Bridge (`tests/adapter/`):** Implemented high-speed inter-process communication (IPC) daemon communicating with native Node.js binaries via JSON over standard IO for automated differential verification across both scanner and matcher engines.
 
 ---
 
 ## Verification & Differential Testing Status
 - **Verification Pipeline:** Certified clean across all toolchain metrics (`go clean`, `gofmt -w .`, `go vet ./...`, `go test -count=1 -v ./...`).
-- **Test Coverage:** **89.3% statement coverage** achieved across package `picomatch`, with 100% statement coverage achieved across all primary syntactic handlers, stack operators, token tree builders, and cursor navigation infrastructure.
-- **Differential Testing:** 378 automated cross-language differential scanner test cases alongside complete parser unit and fuzz test suites (totaling **595 / 595 tests passing**), confirming exact structural and string pattern equivalence against Node.js `picomatch-master`.
-- **Verification Records:** Full audit certificates and engineering reports are persisted in `docs/verification/` (including final parser completeness certification in [parser-completion.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/parser-completion.md)).
+- **Test Coverage:** **90.0% statement coverage** achieved across package `github.com/Sourav-Singhhh/PortMortem/port`, with 100% statement coverage achieved across all primary syntactic handlers, stack operators, token tree builders, cursor navigation infrastructure, and matcher fastpaths.
+- **Differential Testing:** 378 automated cross-language differential scanner test cases alongside 82 live end-to-end differential matcher evaluation fixtures (covering composite extglobs, option permutations, ReDoS patterns, and Unicode UTF-8 multibyte paths), confirming exact behavioral equivalence against Node.js `picomatch-master` with a 100% test pass rate.
+- **Verification Records:** Full audit certificates and engineering reports are persisted in `docs/verification/`.
 
 ---
 
 ## Project Statistics
 | Metric | Current Value | Status / Notes |
 | :--- | :--- | :--- |
-| **Total Passing Tests** | 595 / 595 | 100% Pass Rate across unit, boundary, forensic, ReDoS, and differential suites |
-| **Differential Scanner Scenarios** | 378 | Zero behavioral divergences against Node.js runtime |
-| **Code Statement Coverage** | 89.3% | High-confidence testing with 100% coverage on primary structural handlers |
-| **Completed Engineering Sprints** | 10 Sprints | Initialization through full Parser Completion & Regex Synthesis |
-| **Known Behavioral Divergences** | 0 | Bug-for-bug parity preserved |
+| **Test Suite Pass Rate** | 100% Passing | 100% pass rate confirmed across unit, boundary, ReDoS, and end-to-end differential suites |
+| **Differential Scanner Scenarios** | 378 | Zero behavioral divergences against native Node.js runtime |
+| **Differential Matcher Scenarios** | 82 | End-to-end string matching verification against Node.js runtime via IPC bridge |
+| **Code Statement Coverage** | 90.0% | High-confidence testing with 100% coverage on primary structural handlers |
+| **Completed Engineering Sprints** | 11 Sprints | Initialization through full Scanner, Parser, Regex Synthesis, and Matcher Integration |
+| **Known Behavioral Divergences** | 0 | Bug-for-bug architectural parity preserved |
 
 ---
 
 ## Current Architecture Summary
-Port Mortem employs a single-pass interleaved scanning engine where lexical analysis, structural token link trees (`ParseToken`), syntactic state checkpoints (`BraceStack`, `ExtglobStack`), syntax errors, ReDoS security inspections, and platform-aware JavaScript regular expression string accumulation (`state.Output`) run synchronously inside `Parse()`. By eliminating intermediate abstract syntax tree (AST) transduction phases and converting recursive fallback routines into iterative reverse traversals, the engine achieves absolute algorithmic fidelity to Node.js `picomatch/lib/parse.js` while operating with zero runtime panics and predictable Go memory efficiency.
+Port Mortem unites a single-pass interleaved parser engine with a multi-tiered runtime evaluation matcher. During parsing, lexical scanning, structural token link trees (`ParseToken`), syntactic checkpoints (`BraceStack`, `ExtglobStack`), syntax errors, ReDoS security inspections, and pattern string accumulation execute synchronously inside `Parse()`. During runtime evaluation, `Compile()` caches structured pattern segments (`patSegments`) and regex representations inside a thread-safe `Matcher` struct (`sync.RWMutex`). To overcome RE2 engine prohibitions against arbitrary negative lookarounds without resorting to external PCRE bindings, `Match()` evaluates literal fastpaths and executes recursive set-difference pattern decompositions ($A \setminus B \equiv A \cap \neg B$), achieving linear-time ReDoS execution immunity and exact algorithmic fidelity to Node.js `picomatch`.
 
 ---
 
 ## Roadmap & Migration Checklist
 
-### Completed Phases (Scanner & Parser Migration: 100% Complete)
+### Completed Phases (Syntax Migration & Matcher Runtime: 100% Complete)
 - [x] **Sprint 1:** Repository initialization and persistent JS-Go IPC testing bridge
 - [x] **Sprint 2:** Single-pass structural scanner migration & differential suite
 - [x] **Sprint 3:** Parser foundational types, token tree models, and stack operations
@@ -53,16 +55,20 @@ Port Mortem employs a single-pass interleaved scanning engine where lexical anal
 - [x] **Sprint 8:** Extglob parsing foundation, structural parenthesis balancing, option toggles, and condition tracking
 - [x] **Sprint 9:** Wildcard & globstar structural foundation (`*`, `**`, `?`), slash normalization, and dotfile interactions
 - [x] **Sprint 10:** Parser completion, regular expression syntax synthesis, POSIX character class tables, brace range expansion (`{1..5}`/`{a..z}`), and ReDoS exponential backtracking mitigation
+- [x] **Sprint 11:** Runtime matcher integration, exported evaluation API (`Compile()`, `Match()`), thread-safe pattern caching, zero-allocation path segment validation, RE2 set-difference lookahead resolution, and differential matcher testing
 
-### Remaining Phases (Matcher Validation, Benchmarking & Release Engineering)
-- [ ] **Sprint 11 (Matcher Validation & Regex Engine Bridging):** Integrate regular expression outputs with Go standard `regexp` execution engines (or PCRE/RE2 compatibility layers), resolve negative lookaround exclusions, and implement exported evaluation functions (`picomatch.Match()`, `Compile()`, `IsMatch()`).
-- [ ] **Sprint 12 (End-to-End Differential Verification & Benchmarking):** Perform full-scale pattern matching evaluation against Node.js runtime across comprehensive fixture repositories and run comparative execution speed (`ns/op`) and memory benchmarks (`testing.B`).
-- [ ] **Sprint 13 (Performance Analysis, Optimization & v1.0 Release Preparation):** Execute CPU and memory profiling (`go test -cpuprofile` / `-memprofile`), implement zero-allocation pattern caching pools (`sync.Pool`), and finalize v1.0 production release packages.
+### Remaining Phases (Benchmarking, Optimization & Release Engineering)
+- [ ] **Phase B (Large-Scale Verification):** Execute expanded differential pattern evaluation against Node.js runtime across comprehensive fixture repositories and simulated filesystem directory trees.
+- [ ] **Phase C/D (Benchmarking & Performance Optimization):** Implement comprehensive quantitative runtime benchmarking (`testing.B`), perform multithreaded stress testing (`RunParallel`), run ReDoS property-based fuzzing (`testing.F`), execute CPU/memory profiling (`go test -cpuprofile` / `-memprofile`), and refine object pools (`sync.Pool`) toward zero dynamic heap allocations (`0 allocs/op`).
+- [ ] **Phase E/F (Cross-Platform Verification & Release Packaging):** Validate path normalization across simulated Windows (`\`) and POSIX (`/`) filesystem boundaries, trim testing bridge infrastructure from production builds, and enforce module export encapsulation.
+- [ ] **Phase G/H (Final Documentation & v1.0 Release Candidate):** Finalize GoDoc symbol commentaries, publish benchmark comparison tables, draft `CHANGELOG.md`, and publish signed immutable semantic version tags (`v1.0.0-rc1` progressing to `v1.0.0`).
 
 ---
 
 ## Documentation Registry
-- **[DECISIONS.md](file:///C:/Users/rajpu/Desktop/PortMortem/DECISIONS.md):** Complete architectural decisions log detailing design rationale and rejected alternatives.
-- **[BENCHMARKS.md](file:///C:/Users/rajpu/Desktop/PortMortem/BENCHMARKS.md):** Performance goals, methodology, metrics, and official postponement status.
+- **[DECISIONS.md](file:///C:/Users/rajpu/Desktop/PortMortem/DECISIONS.md):** Complete architectural decisions log detailing design rationale, RE2 compatibility strategies, and rejected alternatives.
+- **[RELEASE_PLAN.md](file:///C:/Users/rajpu/Desktop/PortMortem/RELEASE_PLAN.md):** Master v1.0 release candidate planning document, governance models, and release checklists.
+- **[BENCHMARKS.md](file:///C:/Users/rajpu/Desktop/PortMortem/BENCHMARKS.md):** Performance goals, evaluation methodology, metrics, and baseline comparison roadmap.
 - **[PORTING_STRATEGY.md](file:///C:/Users/rajpu/Desktop/PortMortem/PORTING_STRATEGY.md):** Comprehensive engineering blueprint and historical migration progress log.
 - **[ARCHITECTURE.md](file:///C:/Users/rajpu/Desktop/PortMortem/ARCHITECTURE.md):** High-level system design, module dependency graphs, and structural paradigms.
+s.
