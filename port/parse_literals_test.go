@@ -53,14 +53,14 @@ func TestParseLiterals_EscapedLiterals(t *testing.T) {
 	})
 
 	t.Run("Escaped slash without bash option (default)", func(t *testing.T) {
-		// Without bash option, \/ discards backslash. In Sprint 5, before slash grammar is implemented,
-		// the trailing slash and text merge into a single text token "foo/bar".
+		// Without bash option, \/ discards backslash. With slash grammar active in Sprint 9,
+		// the unescaped slash emits a distinct TokenTypeSlash token between the plain text segments.
 		state, err := Parse("foo\\/bar", nil)
 		if err != nil {
 			t.Fatalf("Parse error: %v", err)
 		}
-		if len(state.Tokens) != 2 || state.Tokens[1].Value != "foo/bar" {
-			t.Errorf("Expected consolidated text token 'foo/bar' for foo\\/bar in Sprint 5, got %+v", state.Tokens)
+		if len(state.Tokens) != 4 || state.Tokens[1].Value != "foo" || state.Tokens[2].Type != TokenTypeSlash || state.Tokens[3].Value != "bar" {
+			t.Errorf("Expected distinct text and slash tokens for foo\\/bar in Sprint 9, got %+v", state.Tokens)
 		}
 	})
 

@@ -295,6 +295,23 @@ func (s *ParseState) CurrentToken() *ParseToken {
 
 // PushToken ingests a newly constructed token into the AST slice, merging consecutive plain text tokens to optimize allocation and establishing back-links.
 func (s *ParseState) PushToken(token *ParseToken) {
+	// Downgrade globstar to single star when followed by non-directory or non-syntax delimiters (parse.js:494-505)
+	if prev := s.CurrentToken(); prev != nil && prev.Type == TokenTypeGlobstar {
+		isBrace := s.Braces > 0 && (token.Type == TokenTypeComma || token.Type == TokenTypeBrace)
+		isExtglob := token.Extglob || (s.ExtglobStack != nil && !s.ExtglobStack.IsEmpty() && (token.Type == TokenTypePipe || token.Type == TokenTypeParen))
+
+		if token.Type != TokenTypeSlash && token.Type != TokenTypeParen && !isBrace && !isExtglob {
+			if len(s.Output) >= len(prev.Value) {
+				s.Output = s.Output[:len(s.Output)-len(prev.Value)]
+			}
+			prev.Type = TokenTypeStar
+			prev.Value = "*"
+			prev.Output = ""
+			prev.OutputSet = false
+			s.Output += prev.Value
+		}
+	}
+
 	// Accumulate token values into active extglob expressions (parse.js:507-509)
 	if s.ExtglobStack != nil && !s.ExtglobStack.IsEmpty() && token.Type != TokenTypeParen {
 		if ext, ok := s.ExtglobStack.Peek(); ok {

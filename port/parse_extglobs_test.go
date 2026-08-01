@@ -234,8 +234,8 @@ func TestParseExtglobs_EdgeCasesAndGuardBranches(t *testing.T) {
 			t.Fatalf("Parse(%q) failed: %v", pattern, err)
 		}
 		for _, tok := range s.Tokens {
-			if tok.Type == TokenTypeStar {
-				t.Errorf("did not expect TokenTypeStar extglob for %q with no character following open paren", pattern)
+			if tok.Extglob {
+				t.Errorf("did not expect extglob token for %q with no character following open paren", pattern)
 			}
 		}
 	})

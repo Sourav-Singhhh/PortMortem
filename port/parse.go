@@ -93,12 +93,14 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			}
 
 		case '/':
-			// TODO: Implement path slash tokenization and leading "./" prefix stripping (parse.js:975)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleSlash(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '.':
-			// TODO: Implement dot tokenization, directory dot rules, and consecutive dots ".." range formation (parse.js:997)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleDot(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '?':
 			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
@@ -106,8 +108,9 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			} else if handled {
 				continue
 			}
-			// TODO: Implement question mark wildcard semantics (parse.js:1028-1046)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleQmark(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		case '!':
 			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
@@ -142,8 +145,9 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			} else if handled {
 				continue
 			}
-			// TODO: Implement star/globstar wildcard evaluation, consecutive "/**/" stripping, and regex generation (parse.js:1125)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			if err := HandleStar(state, tokVal); err != nil {
+				return nil, err
+			}
 
 		default:
 			HandlePlainText(state, tokVal)
