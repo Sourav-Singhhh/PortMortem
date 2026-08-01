@@ -1,6 +1,7 @@
 package picomatch
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -45,13 +46,13 @@ func TestParse_ASCIISyntaxTraversalAndBranches(t *testing.T) {
 	if state.Consumed != expectedConsumed {
 		t.Errorf("expected consumed text accumulator %q, got %q", expectedConsumed, state.Consumed)
 	}
-	expectedOutput := `\"()\[\].{}/|,?!+@*abcdef`
+	expectedOutput := `\"()\[\].{}/|,?!+@*abcdef\/?`
 	if state.Output != expectedOutput {
 		t.Errorf("expected compiled output %q, got %q", expectedOutput, state.Output)
 	}
-	// With bracket and paren foundations active, [], (), and extglob structures emit distinct structural tokens separating plain text sequences
-	if len(state.Tokens) != 5 {
-		t.Errorf("expected 5 AST tokens (BOS, text, parens, brackets), got %d tokens", len(state.Tokens))
+	// With bracket and paren foundations active, [], (), and extglob structures emit distinct structural tokens separating plain text sequences, plus maybe_slash at EOF
+	if len(state.Tokens) != 6 {
+		t.Errorf("expected 6 AST tokens (BOS, text, parens, brackets, maybe_slash), got %d tokens", len(state.Tokens))
 	}
 }
 
@@ -127,8 +128,74 @@ func TestParse_RepeatedInvocationsAndStateIsolation(t *testing.T) {
 	pattern := "a*b?c"
 	for i := 0; i < 10; i++ {
 		state, err := Parse(pattern, nil)
-		if err != nil || !state.EOS() || state.Consumed != pattern || state.Output != pattern {
+		if err != nil || !state.EOS() || state.Consumed != pattern || state.Output != "a[^/]*?b[^/]c" {
 			t.Fatalf("iteration %d failed state isolation checks: %+v, err=%v", i, state, err)
 		}
 	}
+}
+
+func TestParse_OptionToggles(t *testing.T) {
+	t.Run("NoExtglob option bypasses extglob handling", func(t *testing.T) {
+		s, err := Parse("+(abc)", &ParseOptions{NoExtglob: true})
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		for _, tok := range s.Tokens {
+			if tok.Extglob {
+				t.Errorf("Did not expect extglob tokens when NoExtglob=true")
+			}
+		}
+	})
+
+	t.Run("Nonegate option bypasses negation prefix handling", func(t *testing.T) {
+		s, err := Parse("!abc", &ParseOptions{NoNegate: true})
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		if s.Negated {
+			t.Errorf("Did not expect state.Negated=true when Nonegate=true")
+		}
+	})
+
+	t.Run("NoBrace option bypasses brace expansion", func(t *testing.T) {
+		s, err := Parse("{1..5}", &ParseOptions{NoBrace: true})
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		if strings.Contains(s.Output, "[1-5]") {
+			t.Errorf("Did not expect range expansion when NoBrace=true, got %q", s.Output)
+		}
+	})
+
+	t.Run("NoBracket option bypasses bracket class compilation", func(t *testing.T) {
+		s, err := Parse("[a-z]", &ParseOptions{NoBracket: true})
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		if s.Brackets != 0 {
+			t.Errorf("Did not expect bracket tracking when NoBracket=true")
+		}
+	})
+}
+
+func TestParse_QuotingAndNegation(t *testing.T) {
+	t.Run("Double negation prefix !! toggles negated state", func(t *testing.T) {
+		s, err := Parse("!!foo", nil)
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		if !s.EOS() {
+			t.Errorf("Expected EOS")
+		}
+	})
+
+	t.Run("Quoted pattern strings preserve literal asterisks", func(t *testing.T) {
+		s, err := Parse(`"a*b"`, nil)
+		if err != nil {
+			t.Fatalf("Parse failed: %v", err)
+		}
+		if strings.Contains(s.Output, "[^/]*?") {
+			t.Errorf("Did not expect wildcard compilation inside quotes, got %q", s.Output)
+		}
+	})
 }

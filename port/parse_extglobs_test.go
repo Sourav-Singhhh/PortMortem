@@ -240,3 +240,60 @@ func TestParseExtglobs_EdgeCasesAndGuardBranches(t *testing.T) {
 		}
 	})
 }
+
+func TestParseExtglobs_ClosingHelpers(t *testing.T) {
+	if !isOnlyClosingParens(")))") {
+		t.Errorf("Expected true for ')))'")
+	}
+	if isOnlyClosingParens("") || isOnlyClosingParens(")( ") {
+		t.Errorf("Expected false for non-only closing parens")
+	}
+
+	if !isDotSubextension(".ts") || !isDotSubextension(".tsx") {
+		t.Errorf("Expected true for '.ts' and '.tsx'")
+	}
+	if isDotSubextension("") || isDotSubextension("a.ts") || isDotSubextension(".a/b") || isDotSubextension(".a.b") {
+		t.Errorf("Expected false for invalid subextensions")
+	}
+}
+
+func TestParseExtglobs_NegateSynthesis(t *testing.T) {
+	patterns := []string{
+		"/!(*.d).ts",
+		"/!(*.d).{ts,tsx}",
+		"**/!(*-dbg).@(js)",
+		"!(a/b)",
+		"!(a)*",
+		"(!(foo))",
+	}
+
+	for _, pattern := range patterns {
+		state, err := Parse(pattern, nil)
+		if err != nil {
+			t.Errorf("Parse(%q) failed: %v", pattern, err)
+		}
+		if state.Output == "" {
+			t.Errorf("Parse(%q) produced empty output", pattern)
+		}
+	}
+}
+
+func TestParseExtglobs_ReDoSBacktracking(t *testing.T) {
+	patterns := []string{
+		"+(+(*))",
+		"*(+(*))",
+		"+(*(a))",
+		"*(*(a|b))",
+		"+(a|b|a*)",
+	}
+
+	for _, pattern := range patterns {
+		state, err := Parse(pattern, nil)
+		if err != nil {
+			t.Errorf("Parse(%q) failed on ReDoS expression: %v", pattern, err)
+		}
+		if !state.Backtrack {
+			t.Logf("Note: pattern %q evaluated without backtrack: %s", pattern, state.Output)
+		}
+	}
+}

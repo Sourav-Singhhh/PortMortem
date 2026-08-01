@@ -34,9 +34,24 @@ func HandleCloseBrace(s *ParseState, value string) error {
 
 	output := ")"
 
-	// TODO: Implement brace range expansion via dots evaluation and backtracking (parse.js:907-923)
+	// parse.js:907-923: Brace range expansion via dots evaluation and backtracking
 	if brace.Dots {
-		// Deferred to subsequent range expansion milestone
+		arr := make([]*ParseToken, len(s.Tokens))
+		copy(arr, s.Tokens)
+		var rangeVals []string
+
+		for i := len(arr) - 1; i >= 0; i-- {
+			s.Tokens = s.Tokens[:len(s.Tokens)-1]
+			if arr[i].Type == TokenTypeBrace {
+				break
+			}
+			if arr[i].Type != TokenTypeDots {
+				rangeVals = append([]string{arr[i].Value}, rangeVals...)
+			}
+		}
+
+		output = ExpandRange(rangeVals, s.Opts)
+		s.Backtrack = true
 	}
 
 	if !brace.Comma && !brace.Dots {

@@ -13,12 +13,13 @@ func HandleSlash(s *ParseState, value string) error {
 		if len(s.Tokens) > 0 {
 			s.Tokens = s.Tokens[:len(s.Tokens)-1]
 		}
-		// Reset "prev" to the first token (BOS), which naturally resides at s.CurrentToken() after pop
 		return nil
 	}
 
-	// TODO: Implement regex compilation output (SLASH_LITERAL) (parse.js:989)
-	s.PushToken(NewParseToken(TokenTypeSlash, value, ""))
+	chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+	tok := NewParseToken(TokenTypeSlash, value, chars.SlashLiteral)
+	tok.OutputSet = true
+	s.PushToken(tok)
 	return nil
 }
 
@@ -48,8 +49,10 @@ func HandleDot(s *ParseState, value string) error {
 		return nil
 	}
 
-	// TODO: Implement regex pattern generation (DOT_LITERAL / NO_DOTS_SLASH) (parse.js:1013)
-	s.PushToken(NewParseToken(TokenTypeDot, value, ""))
+	chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+	tok := NewParseToken(TokenTypeDot, value, chars.DotLiteral)
+	tok.OutputSet = true
+	s.PushToken(tok)
 	return nil
 }
 
@@ -93,15 +96,18 @@ func HandleQmark(s *ParseState, value string) error {
 		return nil
 	}
 
+	chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
 	// parse.js:1040-1043: If dot option is not set and preceded by slash or BOS, apply QMARK_NO_DOT anchor
 	if (s.Opts == nil || !s.Opts.Dot) && prev != nil && (prev.Type == TokenTypeSlash || prev.Type == TokenTypeBos) {
-		// TODO: Implement regex compilation anchor QMARK_NO_DOT (parse.js:1041)
-		s.PushToken(NewParseToken(TokenTypeQmark, value, ""))
+		tok := NewParseToken(TokenTypeQmark, value, chars.QmarkNoDot)
+		tok.OutputSet = true
+		s.PushToken(tok)
 		return nil
 	}
 
-	// TODO: Implement regex compilation output QMARK (parse.js:1045)
-	s.PushToken(NewParseToken(TokenTypeQmark, value, ""))
+	tok := NewParseToken(TokenTypeQmark, value, chars.Qmark)
+	tok.OutputSet = true
+	s.PushToken(tok)
 	return nil
 }
 
@@ -109,6 +115,7 @@ func HandleQmark(s *ParseState, value string) error {
 // Matches original picomatch/lib/parse.js lines 1128-1284.
 func HandleStar(s *ParseState, value string) error {
 	prev := s.CurrentToken()
+	chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
 
 	// parse.js:1128-1137: Collapse consecutive stars or stars following a globstar (e.g., ***)
 	if prev != nil && (prev.Type == TokenTypeGlobstar || prev.Star) {
@@ -171,75 +178,163 @@ func HandleStar(s *ParseState, value string) error {
 		if prior != nil && prior.Type == TokenTypeBos && s.EOS() {
 			prev.Type = TokenTypeGlobstar
 			prev.Value += value
-			if prev.OutputSet || prev.Output != "" {
-				prev.Output += value
-			}
+			prev.Output = Globstar(s.Opts, chars)
+			prev.OutputSet = true
 			s.Globstar = true
-			s.Output += value
+			s.Output = prev.Output
 			s.Consume(value, 0)
 			return nil
 		}
 
 		// Case 2: parse.js:1188-1199: Trailing slash globstar at EOS (not preceded by BOS or another star)
 		if prior != nil && prior.Type == TokenTypeSlash && (prior.Prev == nil || prior.Prev.Type != TokenTypeBos) && !afterStar && s.EOS() {
-			// TODO: Implement regex synthesis for trailing slash globstar boundary (parse.js:1189-1196)
+			if len(s.Output) >= len(prior.Output+prev.Output) {
+				s.Output = s.Output[:len(s.Output)-len(prior.Output+prev.Output)]
+			} else if len(s.Output) >= len(prior.Value+prev.Value) {
+				s.Output = s.Output[:len(s.Output)-len(prior.Value+prev.Value)]
+			}
+			prior.Output = "(?:" + prior.Output
+			prior.OutputSet = true
+
 			prev.Type = TokenTypeGlobstar
 			prev.Value += value
-			if prev.OutputSet || prev.Output != "" {
-				prev.Output += value
+			suffix := "|$)"
+			if s.Opts != nil && s.Opts.StrictSlashes {
+				suffix = ")"
 			}
+			prev.Output = Globstar(s.Opts, chars) + suffix
+			prev.OutputSet = true
 			s.Globstar = true
-			s.Output += value
+			s.Output += prior.Output + prev.Output
 			s.Consume(value, 0)
 			return nil
 		}
 
 		// Case 3: parse.js:1201-1218: Mid-pattern slash globstar followed by slash (a/**/b)
 		if prior != nil && prior.Type == TokenTypeSlash && (prior.Prev == nil || prior.Prev.Type != TokenTypeBos) && len(rest) > 0 && rest[0] == '/' {
-			// TODO: Implement regex synthesis for mid-pattern slash globstar (parse.js:1204-1208)
+			end := ""
+			if len(rest) > 1 {
+				end = "|$"
+			}
+			if len(s.Output) >= len(prior.Output+prev.Output) {
+				s.Output = s.Output[:len(s.Output)-len(prior.Output+prev.Output)]
+			} else if len(s.Output) >= len(prior.Value+prev.Value) {
+				s.Output = s.Output[:len(s.Output)-len(prior.Value+prev.Value)]
+			}
+			prior.Output = "(?:" + prior.Output
+			prior.OutputSet = true
+
 			prev.Type = TokenTypeGlobstar
 			prev.Value += value
-			if prev.OutputSet || prev.Output != "" {
-				prev.Output += value
-			}
+			prev.Output = Globstar(s.Opts, chars) + chars.SlashLiteral + "|" + chars.SlashLiteral + end + ")"
+			prev.OutputSet = true
+			s.Output += prior.Output + prev.Output
 			s.Globstar = true
-			s.Output += value
+
 			nextCh := s.Advance()
 			s.Consume(value+string([]byte{nextCh}), 0)
-			s.PushToken(NewParseToken(TokenTypeSlash, "/", ""))
+
+			slashTok := NewParseToken(TokenTypeSlash, "/", "")
+			slashTok.OutputSet = true
+			s.PushToken(slashTok)
 			return nil
 		}
 
 		// Case 4: parse.js:1220-1229: Leading BOS globstar followed by slash (**/a)
 		if prior != nil && prior.Type == TokenTypeBos && len(rest) > 0 && rest[0] == '/' {
-			// TODO: Implement regex synthesis for leading BOS globstar (parse.js:1223)
 			prev.Type = TokenTypeGlobstar
 			prev.Value += value
-			if prev.OutputSet || prev.Output != "" {
-				prev.Output += value
-			}
+			prev.Output = "(?:^|" + chars.SlashLiteral + "|" + Globstar(s.Opts, chars) + chars.SlashLiteral + ")"
+			prev.OutputSet = true
+			s.Output = prev.Output
 			s.Globstar = true
-			s.Output += value
+
 			nextCh := s.Advance()
 			s.Consume(value+string([]byte{nextCh}), 0)
-			s.PushToken(NewParseToken(TokenTypeSlash, "/", ""))
+
+			slashTok := NewParseToken(TokenTypeSlash, "/", "")
+			slashTok.OutputSet = true
+			s.PushToken(slashTok)
 			return nil
 		}
 
 		// Case 5: parse.js:1231-1243: Default fallback globstar upgrade
+		if len(s.Output) >= len(prev.Output) {
+			s.Output = s.Output[:len(s.Output)-len(prev.Output)]
+		} else if len(s.Output) >= len(prev.Value) {
+			s.Output = s.Output[:len(s.Output)-len(prev.Value)]
+		}
 		prev.Type = TokenTypeGlobstar
 		prev.Value += value
-		if prev.OutputSet || prev.Output != "" {
-			prev.Output += value
-		}
+		prev.Output = Globstar(s.Opts, chars)
+		prev.OutputSet = true
 		s.Globstar = true
-		s.Output += value
+		s.Output += prev.Output
 		s.Consume(value, 0)
 		return nil
 	}
 
 	// parse.js:1246-1284: Single star wildcard evaluation
-	// TODO: Implement regex pattern generation, dotfile anchoring (NO_DOT/NO_DOTS_SLASH), and bash/regex option expressions
-	s.PushToken(NewParseToken(TokenTypeStar, value, ""))
+	star := chars.Star
+	if s.Opts != nil && s.Opts.Bash {
+		star = Globstar(s.Opts, chars)
+	}
+	if s.Opts != nil && s.Opts.Capture {
+		star = "(" + star + ")"
+	}
+
+	tok := NewParseToken(TokenTypeStar, value, star)
+	tok.OutputSet = true
+
+	if s.Opts != nil && s.Opts.Bash {
+		tok.Output = ".*?"
+		if prev != nil && (prev.Type == TokenTypeBos || prev.Type == TokenTypeSlash) {
+			nodot := chars.NoDot
+			if s.Opts != nil && s.Opts.Dot {
+				nodot = ""
+			}
+			tok.Output = nodot + tok.Output
+		}
+		s.PushToken(tok)
+		return nil
+	}
+
+	if prev != nil && (prev.Type == TokenTypeBracket || prev.Type == TokenTypeParen) && s.Opts != nil && s.Opts.Regex {
+		tok.Output = value
+		s.PushToken(tok)
+		return nil
+	}
+
+	if s.Index == s.Start || (prev != nil && (prev.Type == TokenTypeSlash || prev.Type == TokenTypeDot)) {
+		if prev != nil && prev.Type == TokenTypeDot {
+			s.Output += chars.NoDotSlash
+			if prev != nil {
+				prev.Output += chars.NoDotSlash
+				prev.OutputSet = true
+			}
+		} else if s.Opts != nil && s.Opts.Dot {
+			s.Output += chars.NoDotsSlash
+			if prev != nil {
+				prev.Output += chars.NoDotsSlash
+				prev.OutputSet = true
+			}
+		} else {
+			s.Output += chars.NoDot
+			if prev != nil {
+				prev.Output += chars.NoDot
+				prev.OutputSet = true
+			}
+		}
+
+		if s.Peek(1) != '*' {
+			s.Output += chars.OneChar
+			if prev != nil {
+				prev.Output += chars.OneChar
+				prev.OutputSet = true
+			}
+		}
+	}
+
+	s.PushToken(tok)
 	return nil
 }

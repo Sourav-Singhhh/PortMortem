@@ -36,7 +36,33 @@ func HandleBracketTraversal(s *ParseState, value string) (bool, error) {
 	if s.Brackets > 0 {
 		prev := s.CurrentToken()
 		if value != "]" || (prev != nil && (prev.Value == "[" || prev.Value == "[^")) {
-			// TODO: Implement POSIX character class table translation (parse.js:719-741)
+			// parse.js:719-741: POSIX character class table translation
+			if (s.Opts == nil || s.Opts.Posix) && value == ":" && prev != nil && len(prev.Value) > 1 {
+				inner := prev.Value[1:]
+				if strings.Contains(inner, "[") {
+					prev.Posix = true
+					if strings.Contains(inner, ":") {
+						idx := strings.LastIndex(prev.Value, "[")
+						pre := prev.Value[:idx]
+						rest := prev.Value[idx+2:]
+						if posix, ok := GetPosixRegexSource(rest); ok {
+							prev.Value = pre + posix
+							s.Backtrack = true
+							s.Advance()
+
+							if len(s.Tokens) > 1 && s.Tokens[1] == prev {
+								bos := s.Tokens[0]
+								if !bos.OutputSet && bos.Output == "" {
+									chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+									bos.Output = chars.OneChar
+									bos.OutputSet = true
+								}
+							}
+							return true, nil
+						}
+					}
+				}
+			}
 
 			if (value == "[" && s.Peek(1) != ':') || (value == "-" && s.Peek(1) == ']') {
 				value = "\\" + value
@@ -72,11 +98,12 @@ func HandleOpenBracket(s *ParseState, value string) error {
 		s.Increment("brackets")
 	}
 
-	s.PushToken(NewParseToken(TokenTypeBracket, value, ""))
+	tok := NewParseToken(TokenTypeBracket, value, "")
+	s.PushToken(tok)
 	return nil
 }
 
-// HandleCloseBracket evaluates closing square bracket state transitions and opening balance verification.
+// HandleCloseBracket evaluates closing square bracket state transitions, path slash injection, and character class formation.
 // Matches original picomatch/lib/parse.js lines 829-875.
 func HandleCloseBracket(s *ParseState, value string) error {
 	prev := s.CurrentToken()
@@ -102,17 +129,43 @@ func HandleCloseBracket(s *ParseState, value string) error {
 	s.Decrement("brackets")
 
 	if prev != nil {
+		prevValue := ""
 		if len(prev.Value) > 1 {
-			prevValue := prev.Value[1:]
+			prevValue = prev.Value[1:]
 			if !prev.Posix && len(prevValue) > 0 && prevValue[0] == '^' && !strings.Contains(prevValue, "/") {
 				value = "/" + value
 			}
 		}
 		prev.Value += value
+		s.Append(&ParseToken{Value: value})
+
+		// parse.js:854-874: Regex character class generation and literalBrackets option rewriting
+		if len(prevValue) > 0 {
+			if HasRegexChars(prevValue) {
+				return nil
+			}
+
+			escaped := EscapeRegex(prev.Value)
+			if len(s.Output) >= len(prev.Value) {
+				s.Output = s.Output[:len(s.Output)-len(prev.Value)]
+			}
+
+			if s.Opts != nil && s.Opts.LiteralBrackets {
+				s.Output += escaped
+				prev.Value = escaped
+				return nil
+			}
+
+			capture := "?:"
+			if s.Opts != nil && s.Opts.Capture {
+				capture = ""
+			}
+			prev.Value = "(" + capture + escaped + "|" + prev.Value + ")"
+			s.Output += prev.Value
+		}
+		return nil
 	}
 	s.Append(&ParseToken{Value: value})
-
-	// TODO: Implement regex character class generation, hasRegexChars evaluation, and literalBrackets option rewriting (parse.js:854-874)
 	return nil
 }
 

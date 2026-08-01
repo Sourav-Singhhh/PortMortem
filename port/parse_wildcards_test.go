@@ -6,13 +6,16 @@ import (
 
 func TestParseWildcards_SlashHandling(t *testing.T) {
 	t.Run("Leading ./ prefix stripping at BOS", func(t *testing.T) {
-		// parse.js:980-987: Leading "./" is stripped to simplify lookbehinds at BOS
+		// parse.js:430 & 980-987: Leading "./" is stripped by removePrefix before loop or by HandleSlash after negation
 		state, err := Parse("./foo/bar", nil)
 		if err != nil {
 			t.Fatalf("Parse error: %v", err)
 		}
-		if state.Start != 2 {
-			t.Errorf("Expected state.Start == 2 after stripping ./ prefix, got %d", state.Start)
+		if state.Prefix != "./" {
+			t.Errorf("Expected state.Prefix == './', got %q", state.Prefix)
+		}
+		if state.Start != 0 {
+			t.Errorf("Expected state.Start == 0 after removePrefix, got %d", state.Start)
 		}
 		// Expected tokens: BOS, "foo", "/", "bar"
 		if len(state.Tokens) != 4 {
@@ -26,6 +29,18 @@ func TestParseWildcards_SlashHandling(t *testing.T) {
 		}
 		if state.Tokens[2].Type != TokenTypeSlash || state.Tokens[2].Value != "/" {
 			t.Errorf("Expected third token to be slash, got %+v", state.Tokens[2])
+		}
+
+		// Verify HandleSlash stripping after negation prefix (parse.js:980-987)
+		stateNeg, err := Parse("!./foo/bar", nil)
+		if err != nil {
+			t.Fatalf("Parse error on negated !./foo/bar: %v", err)
+		}
+		if stateNeg.Start != 3 {
+			t.Errorf("Expected state.Start == 3 after HandleSlash stripping on !./, got %d", stateNeg.Start)
+		}
+		if !stateNeg.Negated {
+			t.Errorf("Expected state.Negated to be true for !./foo/bar")
 		}
 	})
 
@@ -75,7 +90,8 @@ func TestParseWildcards_DotHandling(t *testing.T) {
 
 	t.Run("Range dots inside braces", func(t *testing.T) {
 		// parse.js:998-1006: Consecutive dots inside braces mutate into TokenTypeDots (..) and mark BraceState.Dots
-		state, err := Parse("{1..5}", nil)
+		// Test unclosed brace so range tokens remain un-popped in state.Tokens
+		state, err := Parse("{1..5", nil)
 		if err != nil {
 			t.Fatalf("Parse error: %v", err)
 		}
@@ -86,7 +102,16 @@ func TestParseWildcards_DotHandling(t *testing.T) {
 			}
 		}
 		if !foundDots {
-			t.Errorf("Expected TokenTypeDots ('..') token inside braces, got %+v", state.Tokens)
+			t.Errorf("Expected TokenTypeDots ('..') token inside unclosed braces, got %+v", state.Tokens)
+		}
+
+		// When brace is closed, parse.js:907-923 pops inner tokens and produces expanded range output
+		closedState, err := Parse("{1..5}", nil)
+		if err != nil {
+			t.Fatalf("Parse error on closed range: %v", err)
+		}
+		if closedState.Output != "[1-5]" {
+			t.Errorf("Expected expanded range output for {1..5}, got %q", closedState.Output)
 		}
 	})
 }

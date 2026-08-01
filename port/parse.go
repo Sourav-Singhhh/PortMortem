@@ -1,14 +1,28 @@
 package picomatch
 
+import (
+	"fmt"
+)
+
 // Parse executes the main single-pass parser loop across a pattern string, generating an AST of tokens
 // and compiling regular expression output in accordance with original parse.js control flow.
-//
-// In this architectural skeleton milestone, all syntactic grammar evaluation, regex transformation,
-// extglob tracking, and delimiter matching are deferred via explicit TODO markers. The parser loop
-// purely traverses character by character, maintains safe boundaries, and terminates cleanly.
 func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 	if opts == nil {
 		opts = NewParseOptions()
+	}
+
+	if pattern == "***" {
+		pattern = "*"
+	} else if pattern == "**/**" || pattern == "**/**/**" {
+		pattern = "**"
+	}
+
+	max := ParserMaxInputLength
+	if opts.MaxLength > 0 && opts.MaxLength < ParserMaxInputLength {
+		max = opts.MaxLength
+	}
+	if len(pattern) > max {
+		return nil, fmt.Errorf(ErrInputExceeds, len(pattern), max)
 	}
 
 	state := NewParseState(pattern, opts)
@@ -40,7 +54,16 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 		} else if handled {
 			continue
 		}
-		// TODO: Handle active quoted string literal traversal when state.Quotes == 1 (parse.js:765)
+
+		// parse.js:765-773: Handle active quoted string literal traversal when state.Quotes == 1
+		if state.Quotes == 1 && tokVal != "\"" {
+			val := EscapeRegex(tokVal)
+			if prev := state.CurrentToken(); prev != nil {
+				prev.Value += val
+			}
+			state.Append(&ParseToken{Value: val})
+			continue
+		}
 
 		// Switch structure precisely reflecting original parse.js syntactic branches
 		switch ch {
@@ -49,8 +72,15 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
 
 		case '"':
-			// TODO: Implement double quote state toggling and keepQuotes option evaluation (parse.js:776)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			// parse.js:776-782: Double quote state toggling and keepQuotes option evaluation
+			if state.Quotes == 1 {
+				state.Quotes = 0
+			} else {
+				state.Quotes = 1
+			}
+			if state.Opts != nil && state.Opts.KeepQuotes {
+				state.PushToken(NewParseToken(TokenTypeText, tokVal, ""))
+			}
 
 		case '(':
 			if err := HandleOpenParen(state, tokVal); err != nil {
@@ -118,8 +148,12 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			} else if handled {
 				continue
 			}
-			// TODO: Implement negation prefix interpretation (parse.js:1061)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			// parse.js:1061-1065: Negation prefix interpretation at BOS
+			if (state.Opts == nil || !state.Opts.NoNegate) && state.Index == 0 {
+				HandleNegate(state)
+				continue
+			}
+			state.PushToken(NewParseToken(TokenTypeText, tokVal, ""))
 
 		case '+':
 			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
@@ -127,8 +161,19 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			} else if handled {
 				continue
 			}
-			// TODO: Implement plus literal interpretation (parse.js:1077-1088)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			// parse.js:1077-1088: Plus literal vs unescaped regex quantifier
+			prev := state.CurrentToken()
+			if prev != nil && prev.Value == "(" {
+				chars := GetGlobChars(state.Opts != nil && state.Opts.Windows)
+				state.PushToken(NewParseToken(TokenTypePlus, tokVal, chars.PlusLiteral))
+				continue
+			}
+			if (prev != nil && (prev.Type == TokenTypeBracket || prev.Type == TokenTypeParen || prev.Type == TokenTypeBrace)) || state.Parens > 0 {
+				state.PushToken(NewParseToken(TokenTypePlus, tokVal, ""))
+				continue
+			}
+			chars := GetGlobChars(state.Opts != nil && state.Opts.Windows)
+			state.PushToken(NewParseToken(TokenTypePlus, tokVal, chars.PlusLiteral))
 
 		case '@':
 			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
@@ -136,8 +181,13 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 			} else if handled {
 				continue
 			}
-			// TODO: Implement '@' text symbol handling (parse.js:1101)
-			state.PushToken(&ParseToken{Type: TokenTypeText, Value: tokVal})
+			// parse.js:1101-1108: '@' text symbol handling
+			prev := state.CurrentToken()
+			if (prev != nil && (prev.Type == TokenTypeBracket || prev.Type == TokenTypeParen || prev.Type == TokenTypeBrace)) || state.Parens > 0 {
+				state.PushToken(NewParseToken(TokenTypeAt, tokVal, ""))
+				continue
+			}
+			state.PushToken(NewParseToken(TokenTypeText, tokVal, ""))
 
 		case '*':
 			if handled, err := HandleExtglobPrefix(state, ch, tokVal); err != nil {
@@ -163,6 +213,30 @@ func Parse(pattern string, opts *ParseOptions) (*ParseState, error) {
 	}
 	if err := HandleUnclosedBraces(state); err != nil {
 		return nil, err
+	}
+
+	// parse.js:1304-1306: Trailing maybe_slash pushing at EOF
+	prev := state.CurrentToken()
+	if (state.Opts == nil || !state.Opts.StrictSlashes) && prev != nil && (prev.Type == TokenTypeStar || prev.Type == TokenTypeBracket) {
+		chars := GetGlobChars(state.Opts != nil && state.Opts.Windows)
+		tok := NewParseToken(TokenTypeMaybeSlash, "", chars.SlashLiteral+"?")
+		tok.OutputSet = true
+		state.PushToken(tok)
+	}
+
+	// parse.js:1308-1319: Rebuild state.Output from token array if backtracking occurred at any point
+	if state.Backtrack {
+		state.Output = ""
+		for _, token := range state.Tokens {
+			if token.OutputSet || token.Output != "" {
+				state.Output += token.Output
+			} else {
+				state.Output += token.Value
+			}
+			if token.Suffix != "" {
+				state.Output += token.Suffix
+			}
+		}
 	}
 
 	return state, nil

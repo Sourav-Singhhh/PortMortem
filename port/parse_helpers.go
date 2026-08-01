@@ -3,6 +3,7 @@ package picomatch
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // NewParseOptions creates a new ParseOptions struct populated with standard default operational values.
@@ -64,10 +65,15 @@ func NewExtglobState(token *ParseToken, extType TokenType, value string, parens 
 	}
 }
 
-// NewParseState allocates and initializes a complete runtime parsing state object with an immutable opening BOS token.
 func NewParseState(input string, opts *ParseOptions) *ParseState {
 	if opts == nil {
 		opts = NewParseOptions()
+	}
+
+	prefix := ""
+	if strings.HasPrefix(input, "./") {
+		input = input[2:]
+		prefix = "./"
 	}
 
 	bos := NewParseToken(TokenTypeBos, "", opts.Prepend)
@@ -80,12 +86,29 @@ func NewParseState(input string, opts *ParseOptions) *ParseState {
 		Index:        -1,
 		Start:        0,
 		Dot:          opts.Dot,
+		Prefix:       prefix,
 		Tokens:       []*ParseToken{bos},
 		Stack:        NewParserStack(),
 		BraceStack:   NewBraceStack(),
 		ExtglobStack: NewExtglobStack(),
 		Opts:         opts,
 	}
+}
+
+// HandleNegate executes beginning-of-string pattern negation stripping matching negate() in parse.js:457-473.
+func HandleNegate(s *ParseState) bool {
+	count := 1
+	for s.Peek(1) == '!' && (s.Peek(2) != '(' || s.Peek(3) == '?') {
+		s.Advance()
+		s.Start++
+		count++
+	}
+	if count%2 == 0 {
+		return false
+	}
+	s.Negated = true
+	s.Start++
+	return true
 }
 
 // Push appends a delimiter context category onto the LIFO ParserStack.
@@ -301,14 +324,24 @@ func (s *ParseState) PushToken(token *ParseToken) {
 		isExtglob := token.Extglob || (s.ExtglobStack != nil && !s.ExtglobStack.IsEmpty() && (token.Type == TokenTypePipe || token.Type == TokenTypeParen))
 
 		if token.Type != TokenTypeSlash && token.Type != TokenTypeParen && !isBrace && !isExtglob {
-			if len(s.Output) >= len(prev.Value) {
+			if len(s.Output) >= len(prev.Output) {
+				s.Output = s.Output[:len(s.Output)-len(prev.Output)]
+			} else if len(s.Output) >= len(prev.Value) {
 				s.Output = s.Output[:len(s.Output)-len(prev.Value)]
+			}
+			chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+			star := chars.Star
+			if s.Opts != nil && s.Opts.Bash {
+				star = Globstar(s.Opts, chars)
+			}
+			if s.Opts != nil && s.Opts.Capture {
+				star = "(" + star + ")"
 			}
 			prev.Type = TokenTypeStar
 			prev.Value = "*"
-			prev.Output = ""
-			prev.OutputSet = false
-			s.Output += prev.Value
+			prev.Output = star
+			prev.OutputSet = true
+			s.Output += prev.Output
 		}
 	}
 

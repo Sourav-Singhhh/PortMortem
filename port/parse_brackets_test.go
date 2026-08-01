@@ -36,8 +36,8 @@ func TestParseBrackets_BasicAndUnclosed(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unexpected parse error: %v", err)
 		}
-		if state.Output != "\\[\\]" {
-			t.Errorf("Expected empty brackets to produce '\\[\\]', got %q", state.Output)
+		if state.Output != "\\[\\]\\/?" {
+			t.Errorf("Expected empty brackets to produce '\\[\\]\\/?', got %q", state.Output)
 		}
 	})
 
@@ -184,5 +184,46 @@ func TestParseBrackets_SyntaxError(t *testing.T) {
 	expected := `Missing closing: "]" - use "\]" to match literal characters`
 	if err.Error() != expected {
 		t.Errorf("SyntaxError output %q != expected %q", err.Error(), expected)
+	}
+}
+
+func TestParseBrackets_PosixClasses(t *testing.T) {
+	tests := []struct {
+		pattern string
+		expect  string
+	}{
+		{"[[:alnum:]]", "a-zA-Z0-9"},
+		{"[[:digit:]]", "0-9"},
+		{"[[:space:]]", " \t\r\n\v\f"},
+		{"[[:punct:]]", `\-!"#$%&\'()\*+,./:;<=>?@[\\]^_\` + "`" + `{|}~`},
+	}
+
+	for _, tt := range tests {
+		state, err := Parse(tt.pattern, nil)
+		if err != nil {
+			t.Errorf("Parse(%q) failed: %v", tt.pattern, err)
+		}
+		if !strings.Contains(state.Output, tt.expect) {
+			t.Errorf("Expected output of %q to contain %q, got %q", tt.pattern, tt.expect, state.Output)
+		}
+	}
+}
+
+func TestParseBrackets_LiteralBrackets(t *testing.T) {
+	pattern := "[abc]"
+	state, err := Parse(pattern, &ParseOptions{LiteralBrackets: true})
+	if err != nil {
+		t.Fatalf("Parse(%q) with LiteralBrackets failed: %v", pattern, err)
+	}
+	if !strings.Contains(state.Output, `\[abc\]`) {
+		t.Errorf("Expected output with escaped brackets '\\[abc\\]', got %q", state.Output)
+	}
+
+	stateCat, err := Parse(pattern, &ParseOptions{Capture: true})
+	if err != nil {
+		t.Fatalf("Parse(%q) with Capture=true failed: %v", pattern, err)
+	}
+	if !strings.Contains(stateCat.Output, `(\[abc\]|[abc])`) {
+		t.Errorf("Expected capture group '(\\[abc\\]|[abc])' when Capture=true, got %q", stateCat.Output)
 	}
 }

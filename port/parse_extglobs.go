@@ -1,8 +1,38 @@
 package picomatch
 
+import (
+	"strings"
+)
+
 // isRegexGroupChar checks if a byte matches regex capture or lookaround identifiers /[!=<:]/ (parse.js:1055).
 func isRegexGroupChar(b byte) bool {
 	return b == '!' || b == '=' || b == '<' || b == ':'
+}
+
+// isOnlyClosingParens tests if string is composed entirely of one or more ')' characters (/^\)+$/).
+func isOnlyClosingParens(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] != ')' {
+			return false
+		}
+	}
+	return true
+}
+
+// isDotSubextension tests if string matches a non-magical trailing file extension (/^\.[^\\/.]+$/).
+func isDotSubextension(s string) bool {
+	if len(s) < 2 || s[0] != '.' {
+		return false
+	}
+	for i := 1; i < len(s); i++ {
+		if s[i] == '\\' || s[i] == '/' || s[i] == '.' {
+			return false
+		}
+	}
+	return true
 }
 
 // HandleExtglobOpen executes extglob opening state tracking, stack pushes, and token initialization.
@@ -14,12 +44,42 @@ func HandleExtglobOpen(s *ParseState, extType TokenType, value string) error {
 	parens := s.Parens
 	output := s.Output
 
-	tok := NewParseToken(extType, value, "")
+	chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+	var openStr, closeStr string
+	switch value {
+	case "!":
+		openStr = "(?:(?!(?:"
+		closeStr = "))" + chars.Star + ")"
+	case "?":
+		openStr = "(?:"
+		closeStr = ")?"
+	case "+":
+		openStr = "(?:"
+		closeStr = ")+"
+	case "*":
+		openStr = "(?:"
+		closeStr = ")*"
+	case "@":
+		openStr = "(?:"
+		closeStr = ")"
+	default:
+		openStr = "(?:"
+		closeStr = ")"
+	}
+
+	opOut := ""
+	if s.Output == "" {
+		opOut = chars.OneChar
+	}
+	tok := NewParseToken(extType, value, opOut)
+	tok.OutputSet = true
 	tok.Extglob = true
 	tok.OutputIndex = outIdx
 	tok.TokensIndex = tokIdx
 
 	ext := NewExtglobState(tok, extType, value, parens, startIdx, tokIdx)
+	ext.Open = openStr
+	ext.Close = closeStr
 	ext.Output = output
 	ext.Conditions = 1
 	ext.Inner = ""
@@ -28,7 +88,12 @@ func HandleExtglobOpen(s *ParseState, extType TokenType, value string) error {
 	s.PushToken(tok)
 
 	parenCh := s.Advance()
-	parenTok := NewParseToken(TokenTypeParen, string([]byte{parenCh}), "(")
+	parenOut := openStr
+	if s.Opts != nil && s.Opts.Capture {
+		parenOut = "(" + parenOut
+	}
+	parenTok := NewParseToken(TokenTypeParen, string([]byte{parenCh}), parenOut)
+	parenTok.OutputSet = true
 	parenTok.Extglob = true
 	s.PushToken(parenTok)
 
@@ -36,20 +101,110 @@ func HandleExtglobOpen(s *ParseState, extType TokenType, value string) error {
 	return nil
 }
 
-// HandleExtglobClose executes extglob closing state transitions and stack pops.
+// HandleExtglobClose executes extglob closing state transitions, ReDoS mitigation, and regex synthesis.
 // Matches original picomatch/lib/parse.js lines 539-600.
 func HandleExtglobClose(s *ParseState, ext *ExtglobState, value string) error {
-	// TODO: Implement ReDoS repeated extglob analysis and rollback fallback (parse.js:542-566)
-	// TODO: Implement wildcard globstar and regex closing synthesis (parse.js:568-591)
+	startIdx := ext.StartIndex
+	if startIdx < 0 {
+		startIdx = 0
+	}
+	endIdx := s.Index
+	if endIdx >= len(s.Input) {
+		endIdx = len(s.Input) - 1
+	}
+	var literal, body string
+	if startIdx <= endIdx {
+		literal = s.Input[startIdx : endIdx+1]
+	}
+	if startIdx+2 <= endIdx {
+		body = s.Input[startIdx+2 : endIdx]
+	}
+
+	// parse.js:542-566: ReDoS repeated extglob analysis and rollback fallback
+	analysis := AnalyzeRepeatedExtglob(body, s.Opts)
+	if (ext.Type == TokenTypePlus || ext.Type == TokenTypeStar) && analysis.Risky {
+		chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+		var safeOutput string
+		if analysis.SafeOutput != "" {
+			prefix := ""
+			if ext.Output == "" {
+				prefix = chars.OneChar
+			}
+			suffix := analysis.SafeOutput
+			if s.Opts != nil && s.Opts.Capture {
+				suffix = "(" + suffix + ")"
+			}
+			safeOutput = prefix + suffix
+		}
+
+		openIdx := ext.TokensIndex
+		if openIdx >= 0 && openIdx < len(s.Tokens) {
+			open := s.Tokens[openIdx]
+			open.Type = TokenTypeText
+			open.Value = literal
+			if safeOutput != "" {
+				open.Output = safeOutput
+			} else {
+				open.Output = EscapeRegex(literal)
+			}
+			open.OutputSet = true
+
+			for i := openIdx + 1; i < len(s.Tokens); i++ {
+				s.Tokens[i].Value = ""
+				s.Tokens[i].Output = ""
+				s.Tokens[i].OutputSet = true
+				s.Tokens[i].Suffix = ""
+			}
+			s.Output = ext.Output + open.Output
+		}
+		s.Backtrack = true
+
+		tok := NewParseToken(TokenTypeParen, value, "")
+		tok.Extglob = true
+		tok.OutputSet = true
+		s.PushToken(tok)
+		s.Decrement(ParserContextParens)
+		return nil
+	}
+
+	// parse.js:568-596: Wildcard globstar and regex closing synthesis
+	output := ext.Close
+	if s.Opts != nil && s.Opts.Capture {
+		output += ")"
+	}
 
 	if ext.Type == TokenTypeNegate {
+		chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+		star := chars.Star
+		extglobStar := star
+
+		if len(ext.Inner) > 1 && strings.Contains(ext.Inner, "/") {
+			extglobStar = Globstar(s.Opts, chars)
+		}
+
+		rem := s.Remaining()
+		if extglobStar != star || s.EOS() || isOnlyClosingParens(rem) {
+			ext.Close = ")$))" + extglobStar
+			output = ext.Close
+		}
+
+		if strings.Contains(ext.Inner, "*") && rem != "" && isDotSubextension(rem) {
+			subOpts := *s.Opts
+			subOpts.Fastpaths = false
+			if res, err := Parse(rem, &subOpts); err == nil {
+				ext.Close = ")" + res.Output + ")$)" + extglobStar + ")"
+				output = ext.Close
+			}
+		}
+
 		if ext.Token != nil && ext.Token.Prev != nil && ext.Token.Prev.Type == TokenTypeBos {
 			s.NegatedExtglob = true
 		}
 	}
 
-	tok := NewParseToken(TokenTypeParen, value, ")")
+	tok := NewParseToken(TokenTypeParen, value, output)
 	tok.Extglob = true
+	tok.OutputSet = true
 	s.PushToken(tok)
 
 	s.Decrement(ParserContextParens)
