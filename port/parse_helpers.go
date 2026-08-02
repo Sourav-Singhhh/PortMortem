@@ -19,17 +19,17 @@ func NewParseOptions() *ParseOptions {
 
 // NewParserStack instantiates a new empty ParserStack structure for tracking structural delimiter contexts.
 func NewParserStack() *ParserStack {
-	return &ParserStack{items: make([]ParserContext, 0)}
+	return &ParserStack{items: make([]ParserContext, 0, 8)}
 }
 
 // NewBraceStack instantiates a new empty BraceStack structure for tracking active brace groups.
 func NewBraceStack() *BraceStack {
-	return &BraceStack{items: make([]*BraceState, 0)}
+	return &BraceStack{items: make([]*BraceState, 0, 8)}
 }
 
 // NewExtglobStack instantiates a new empty ExtglobStack structure for tracking active extglob shells.
 func NewExtglobStack() *ExtglobStack {
-	return &ExtglobStack{items: make([]*ExtglobState, 0)}
+	return &ExtglobStack{items: make([]*ExtglobState, 0, 8)}
 }
 
 // NewParseToken allocates and initializes a new ParseToken structural syntax node.
@@ -81,13 +81,16 @@ func NewParseState(input string, opts *ParseOptions) *ParseState {
 		bos.OutputSet = true
 	}
 
+	tokens := make([]*ParseToken, 0, 32)
+	tokens = append(tokens, bos)
+
 	return &ParseState{
 		Input:        input,
 		Index:        -1,
 		Start:        0,
 		Dot:          opts.Dot,
 		Prefix:       prefix,
-		Tokens:       []*ParseToken{bos},
+		Tokens:       tokens,
 		Stack:        NewParserStack(),
 		BraceStack:   NewBraceStack(),
 		ExtglobStack: NewExtglobStack(),
@@ -147,7 +150,7 @@ func (s *ParserStack) IsEmpty() bool {
 
 // Clear resets the ParserStack to an empty slice.
 func (s *ParserStack) Clear() {
-	s.items = make([]ParserContext, 0)
+	s.items = s.items[:0]
 }
 
 // Push appends an active BraceState structure onto the BraceStack.
@@ -186,7 +189,7 @@ func (b *BraceStack) IsEmpty() bool {
 
 // Clear resets the BraceStack to an empty state.
 func (b *BraceStack) Clear() {
-	b.items = make([]*BraceState, 0)
+	b.items = b.items[:0]
 }
 
 // Push appends an active ExtglobState structure onto the ExtglobStack.
@@ -225,7 +228,7 @@ func (e *ExtglobStack) IsEmpty() bool {
 
 // Clear resets the ExtglobStack to an empty state.
 func (e *ExtglobStack) Clear() {
-	e.items = make([]*ExtglobState, 0)
+	e.items = e.items[:0]
 }
 
 // Increment advances the corresponding structural depth counter and pushes the category onto the state delimiter stack.

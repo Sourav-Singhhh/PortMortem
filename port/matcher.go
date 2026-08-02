@@ -20,24 +20,93 @@ type Matcher struct {
 	patSegments    []string
 }
 
+type cacheKeyStruct struct {
+	pattern             string
+	nilOpts             bool
+	windows             bool
+	maxLength           int
+	prepend             string
+	capture             bool
+	dot                 bool
+	bash                bool
+	noExt               bool
+	noExtglob           bool
+	fastpaths           bool
+	unescape            bool
+	contains            bool
+	keepQuotes          bool
+	strictBrackets      bool
+	noBracket           bool
+	posix               bool
+	literalBrackets     bool
+	noBrace             bool
+	noGlobstar          bool
+	strictSlashes       bool
+	regex               bool
+	noNegate            bool
+	maxExtglobRecursion int
+	noExtglobRecursion  bool
+	matchBase           bool
+	basename            bool
+	ignore              string
+	nocase              bool
+	debug               bool
+}
+
 var (
 	cacheMu      sync.RWMutex
-	cache        = make(map[string]*Matcher)
+	cacheNilOpts = make(map[string]*Matcher)
+	cache        = make(map[cacheKeyStruct]*Matcher)
 	maxCacheSize = 1024
 )
 
 // cacheKey generates a unique structural lookup key for compiled matcher persistence.
-func cacheKey(pattern string, opts *ParseOptions) string {
+func cacheKey(pattern string, opts *ParseOptions) cacheKeyStruct {
 	if opts == nil {
-		return pattern + "|nil"
+		return cacheKeyStruct{pattern: pattern, nilOpts: true}
 	}
-	return fmt.Sprintf("%s|w:%v,ml:%d,pr:%q,cap:%v,d:%v,ba:%v,nx:%v,nxg:%v,fp:%v,un:%v,con:%v,kq:%v,sb:%v,nbk:%v,p:%v,lb:%v,nbr:%v,ngs:%v,ss:%v,rx:%v,nn:%v,mxg:%d,nxgr:%v,mb:%v,bn:%v,ig:%q,nc:%v,dbg:%v",
-		pattern, opts.Windows, opts.MaxLength, opts.Prepend, opts.Capture, opts.Dot, opts.Bash, opts.NoExt, opts.NoExtglob, opts.Fastpaths, opts.Unescape, opts.Contains, opts.KeepQuotes, opts.StrictBrackets, opts.NoBracket, opts.Posix, opts.LiteralBrackets, opts.NoBrace, opts.NoGlobstar, opts.StrictSlashes, opts.Regex, opts.NoNegate, opts.MaxExtglobRecursion, opts.NoExtglobRecursion, opts.MatchBase, opts.Basename, opts.Ignore, opts.Nocase, opts.Debug)
+	var ignore string
+	if len(opts.Ignore) > 0 {
+		ignore = strings.Join(opts.Ignore, "\x00")
+	}
+	return cacheKeyStruct{
+		pattern:             pattern,
+		nilOpts:             false,
+		windows:             opts.Windows,
+		maxLength:           opts.MaxLength,
+		prepend:             opts.Prepend,
+		capture:             opts.Capture,
+		dot:                 opts.Dot,
+		bash:                opts.Bash,
+		noExt:               opts.NoExt,
+		noExtglob:           opts.NoExtglob,
+		fastpaths:           opts.Fastpaths,
+		unescape:            opts.Unescape,
+		contains:            opts.Contains,
+		keepQuotes:          opts.KeepQuotes,
+		strictBrackets:      opts.StrictBrackets,
+		noBracket:           opts.NoBracket,
+		posix:               opts.Posix,
+		literalBrackets:     opts.LiteralBrackets,
+		noBrace:             opts.NoBrace,
+		noGlobstar:          opts.NoGlobstar,
+		strictSlashes:       opts.StrictSlashes,
+		regex:               opts.Regex,
+		noNegate:            opts.NoNegate,
+		maxExtglobRecursion: opts.MaxExtglobRecursion,
+		noExtglobRecursion:  opts.NoExtglobRecursion,
+		matchBase:           opts.MatchBase,
+		basename:            opts.Basename,
+		ignore:              ignore,
+		nocase:              opts.Nocase,
+		debug:               opts.Debug,
+	}
 }
 
 // clearCache resets the compiled matcher storage when upper bounds are exceeded.
 func clearCache() {
-	cache = make(map[string]*Matcher)
+	cacheNilOpts = make(map[string]*Matcher)
+	cache = make(map[cacheKeyStruct]*Matcher)
 }
 
 // Compile constructs an executable pattern matcher from a glob expression and runtime configuration.
@@ -46,11 +115,18 @@ func Compile(pattern string, opts *ParseOptions) (*Matcher, error) {
 		return nil, errors.New("expected pattern to be a non-empty string")
 	}
 
-	key := cacheKey(pattern, opts)
 	cacheMu.RLock()
-	if cached, found := cache[key]; found {
-		cacheMu.RUnlock()
-		return cached, nil
+	if opts == nil {
+		if cached, found := cacheNilOpts[pattern]; found {
+			cacheMu.RUnlock()
+			return cached, nil
+		}
+	} else {
+		key := cacheKey(pattern, opts)
+		if cached, found := cache[key]; found {
+			cacheMu.RUnlock()
+			return cached, nil
+		}
 	}
 	cacheMu.RUnlock()
 
@@ -113,10 +189,14 @@ func Compile(pattern string, opts *ParseOptions) (*Matcher, error) {
 	matcher.Regexp = re
 
 	cacheMu.Lock()
-	if len(cache) >= maxCacheSize {
+	if len(cacheNilOpts)+len(cache) >= maxCacheSize {
 		clearCache()
 	}
-	cache[key] = matcher
+	if opts == nil {
+		cacheNilOpts[pattern] = matcher
+	} else {
+		cache[cacheKey(pattern, opts)] = matcher
+	}
 	cacheMu.Unlock()
 
 	return matcher, nil
