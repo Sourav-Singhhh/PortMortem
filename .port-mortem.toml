@@ -1,0 +1,6 @@
+# Port Mortem 2026 Submission Metadata (Track F: JavaScript -> Go)
+track = "F"
+source_repo = "https://github.com/micromatch/picomatch"
+source_commit = "b4f2c53f86e92efb184e030018f4354efd22ceca"
+kickoff_hash = "bcbcdbbb96e11c347d6a2716bc7dfd0d8c42f0667493a8ae70339e6ccf401a6f"
+target_language = "Go"

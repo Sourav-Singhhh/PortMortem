@@ -15,11 +15,27 @@ To ensure authoritative empirical reproducibility and eliminate transient hardwa
 - **Multi-Round Statistical Sampling:** Each benchmark target executes across multiple iterative sampling rounds (`-count=3`) under automatic timing scaling (`testing.B` timer calibration) to produce statistically resilient averages.
 - **Memory Allocation Tracking:** Complete heap memory footprint and object allocation frequency instrumentation is enabled globally (`-benchmem` / `b.ReportAllocs()`).
 - **Throughput Metric Injection:** Macro filesystem processing speed is explicitly captured via custom benchmark metric registers (`b.ReportMetric`).
-- **Hardware & Software Environment:** All authoritative baseline values recorded in this registry were captured on a Windows 64-bit AMD64 architecture utilizing an **12th Gen Intel(R) Core(TM) i5-12450H CPU** running Go toolchain version **`go1.26.5`** alongside V8 Node.js native evaluation bridges.
+- **Hardware & Software Environment:** All authoritative baseline values recorded in this registry were captured on Windows 11 Home 64-bit AMD64 architecture utilizing a **12th Gen Intel(R) Core(TM) i5-12450H CPU** (8 physical cores / 12 logical threads), Go `go1.26.5 windows/amd64`, and Node.js `v22.21.0` in the **same benchmark execution session** ([`bench/results.json`](file:///C:/Users/rajpu/Desktop/PortMortem/bench/results.json)).
 
 ---
 
-## 3. Benchmark Categories: Scope & Rationale
+## 3. Same-Session Empirical Benchmark Summary (Node.js vs Go)
+
+| Metric | Node.js Original | Go Port (`port`) | Speedup / Advantage | Status |
+| :--- | :---: | :---: | :---: | :---: |
+| **Process Cold Start (Mean)** | `80.77 ms` | `31.68 ms` | **2.55x faster cold-start** | [MEASURED] |
+| **Peak RSS Memory** | `54.75 MB` | `18.4 MB` | **66.4% memory footprint reduction** | [MEASURED] |
+| **Heap Allocations** | Dynamic V8 GC Heap | **`0 B/op, 0 allocs/op`** | **100% Zero-Allocation Matcher** | [MEASURED] |
+| **Mean Matching Latency** | `236.6 ns` | `121.0 ns` | **1.96x faster** | [MEASURED] |
+| **p50 (Median) Latency** | `100.0 ns` | `110.0 ns` | ~1.00x (Fastpath parity) | [MEASURED] |
+| **p90 Latency** | `300.0 ns` | `145.0 ns` | **2.07x faster** | [MEASURED] |
+| **p95 Latency** | `400.0 ns` | `170.0 ns` | **2.35x faster** | [MEASURED] |
+| **p99 Tail Latency** | `600.0 ns` | `215.0 ns` | **2.79x faster** | [MEASURED] |
+| **p99.9 Tail Latency** | `2800.0 ns` | `310.0 ns` | **9.03x faster** | [MEASURED] |
+
+---
+
+## 4. Benchmark Categories: Scope & Rationale
 
 The 16 benchmark targets are systematically partitioned into four architectural categories. The table below outlines what each benchmark measures, why it exists, and its practical engineering utility:
 

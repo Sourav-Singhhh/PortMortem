@@ -24,6 +24,8 @@ Thumbs.db
 dist/
 build/
 
-# Temporary
+# Temporary & Test Reports
 tmp/
 temp/
+tests/original/*.json
+tests/*.exe
