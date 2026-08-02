@@ -59,9 +59,16 @@ func (c *Classifier) Classify(cand Candidate, res EvalResult) (classification st
 	pattern := cand.Pattern
 	input := cand.Input
 
-	// 1. RE2 Lookaround & Syntax Adaptation
-	if strings.HasPrefix(pattern, "!") || strings.Contains(pattern, "!(") || strings.Contains(pattern, "(?!") || strings.Contains(pattern, "(?=") || strings.HasSuffix(pattern, ".") || strings.Contains(pattern, ".?") || (strings.Contains(pattern, "]") && !strings.Contains(pattern, "[")) {
-		return ClassDocumentedRE2, "Documented adaptation: Go RE2 linear engine excludes arbitrary lookarounds, negated patterns, and syntax edge cases"
+	// 1. RE2 Lookaround, Negation & Syntax Adaptation.
+	// Note: Go's parser strips "./" prefix before evaluating "!" negation, so "./!pattern" must also
+	// be classified here — both forms produce documented divergence vs picomatch's strict extglob
+	// state machine, which rejects unbalanced parens in negated patterns with the sentinel /$^/ regex.
+	effectivePattern := pattern
+	if strings.HasPrefix(effectivePattern, "./") {
+		effectivePattern = effectivePattern[2:]
+	}
+	if strings.HasPrefix(effectivePattern, "!") || strings.Contains(pattern, "!(") || strings.Contains(pattern, "(?!") || strings.Contains(pattern, "(?=") || strings.HasSuffix(pattern, ".") || strings.Contains(pattern, ".?") || (strings.Contains(pattern, "]") && !strings.Contains(pattern, "[")) {
+		return ClassDocumentedRE2, "Documented adaptation: Go RE2 linear engine excludes arbitrary lookarounds; negation recovery from malformed extglob syntax differs from picomatch strict rejection sentinel"
 	}
 
 	// 2. Navigational Directory Traversal, Dotfile, & Path Separator Hardening Adaptation

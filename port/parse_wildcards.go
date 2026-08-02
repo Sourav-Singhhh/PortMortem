@@ -43,9 +43,13 @@ func HandleDot(s *ParseState, value string) error {
 		return nil
 	}
 
-	// parse.js:1008-1011: Dots outside braces/parens not following BOS or slash are treated as plain text literal dots
+	// parse.js:1008-1011: Dots outside braces/parens not following BOS or slash are treated as plain text literal dots.
+	// The output must be the RE2-escaped literal "\." rather than the raw "." character, which would act as a
+	// regex wildcard matching any character. Node.js picomatch generates "\.\." for "*..*"; Go must do the same.
 	if (s.Braces+s.Parens) == 0 && prev != nil && prev.Type != TokenTypeBos && prev.Type != TokenTypeSlash {
-		s.PushToken(NewParseToken(TokenTypeText, value, ""))
+		tok := NewParseToken(TokenTypeText, value, `\.`)
+		tok.OutputSet = true
+		s.PushToken(tok)
 		return nil
 	}
 

@@ -59,7 +59,14 @@ The 16 benchmark targets are systematically partitioned into four architectural 
 
 ## 4. Sprint 13 Measured Baseline Values
 
+> **[DOCUMENTED] Historical Baseline — Git commit `07652dc` (pre-Sprint 14).**
+> These values represent the authoritative Sprint 13 performance baseline before the Sprint 14 zero-allocation cache optimisation. Specifically:
+> - `BenchmarkCompile_Cached` (1,278 ns/op / 272 B/op / 2 allocs) and `BenchmarkMatch_OneOff` (1,550.7 ns/op / 275 B/op / 2 allocs) were optimised to **0 B/op, 0 allocs/op** in Sprint 14 via the `cacheKeyStruct`/`cacheNilOpts` zero-allocation cache.
+> - `BenchmarkConcurrentMatching` (174.5 ns/op / 33 B/op / 1 alloc) was also reduced to 0 allocs in Sprint 14.
+> Current v1.1.0 measured values are recorded in §8 (Sprint 14 Verified Results) and in `docs/verification/final-equivalence-report.md`.
+
 The table below records the authoritative empirical baseline measurements established in Sprint 13 across all 16 evaluation targets:
+
 
 | Benchmark Target | Execution Latency (`ns/op`) | Memory Consumed (`B/op`) | Heap Allocs (`allocs/op`) | Additional Macro Metrics / Operational Notes |
 | :--- | :---: | :---: | :---: | :--- |

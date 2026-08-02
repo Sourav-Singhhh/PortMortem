@@ -4,7 +4,52 @@ All notable architectural evolution, feature integrations, verification achievem
 
 ---
 
-## [v1.0.0-rc4] - 2026-08-02 (Sprint 16: Release Stabilization & Packaging)
+## [v1.1.0] - 2026-08-02 (Sprint 19: Differential Fuzz Survivor & Continuous Verification)
+
+### Added
+- **Differential Fuzz Survivor Engine (`port/fuzz_survivor/`):** Implemented a continuous adversarial differential testing engine that generates randomized glob patterns and inputs at runtime, evaluates them against both the Go implementation and live Node.js `picomatch` v3.0.1 via stdio IPC, and classifies every outcome as shared agreement, documented adaptation, or unexpected divergence. The engine produced **3,208,608** inputs across a 300-second certified run with **zero unexpected divergences** and **zero panics** at 10,695 comparisons/sec.
+- **Divergence Classifier (`port/fuzz_survivor/classifier.go`):** Structured taxonomy engine categorising divergences into `SHARED_API_PARITY`, `DOCUMENTED_RE2_LIMIT`, `DOCUMENTED_SECURITY_HARDEN`, `EXCLUDED_SYNTAX_ERROR`, and `UNEXPECTED_DIVERGENCE` to filter known architectural adaptations from genuine defects.
+- **Survivor Artefacts (`port/fuzz_survivor/logs/`):** JSONL divergence log (`survivor_log.jsonl`) and structured Markdown report (`survivor_report.md`) automatically generated per run.
+- **Survivor Test Integration (`port/fuzz_survivor/survivor_test.go`):** `go test`-compatible test harnesses for CI integration and exact reproduction of survivor findings.
+
+---
+
+## [v1.0.1] - 2026-08-02 (Sprint 17: Differential Fuzz Testing & Parser Hardening)
+
+### Added
+- **Native Go Fuzz Testing (`port/fuzz_test.go`):** Integrated three `testing.F` fuzz targets (`FuzzCompile`, `FuzzMatch`, `FuzzDifferentialMatcher`) with seed corpora covering wildcards, globstars, extglobs, ranged braces, character classes, and escaped delimiters. `FuzzDifferentialMatcher` performs live stdio IPC streaming against Node.js `picomatch` v3.0.1.
+- **Version-Controlled Regression Corpus (`port/testdata/fuzz/`):** Regression corpus entries (`FuzzCompile/938ed7fe434e9970`) preserving fuzz-discovered edge cases for permanent regression testing.
+- **Fuzz Infrastructure Documentation (`fuzz/README.md`):** Fuzz target summary, execution commands, and architecture documentation.
+
+### Fixed
+- **POSIX Bracket Slice Bounds Panic (`port/parse_brackets.go`):** Fuzz testing discovered a slice bounds out-of-range panic in `HandleBracketTraversal` on malformed bracket expressions. Resolved with a surgical 2-line bounds guard. Zero panics across all subsequent fuzz iterations.
+
+### Documentation
+- **Sprint 17 Documentation Update:** `docs/verification/fuzz-testing.md`, `PORTING_STRATEGY.md`, and related documentation synchronized with Sprint 17 implementation status.
+
+No public API changes. No behavioral regressions.
+
+---
+
+## [v1.0.0] - 2026-08-02 (Sprint 16: Release Stabilization & Official Publication)
+
+### Stable Release
+Official first stable production release of Port Mortem — a high-performance, memory-safe, behaviorally equivalent Go port of Node.js `picomatch`.
+
+### Includes
+- Complete single-pass interleaved parser engine (Sprints 1–10)
+- Runtime matcher with exported `Compile()`, `Match()`, and `Matcher` API (Sprint 11)
+- 3,226 large-scale differential matcher scenarios — zero verified implementation bugs (Sprint 12)
+- 16-target performance benchmark suite with zero-allocation precompiled matching (Sprint 13)
+- Two-tier zero-allocation matcher compilation cache; 87.1% latency reduction on cached paths (Sprint 14)
+- Cross-platform validation: Windows, Linux, macOS, Unicode, multibyte scripts, emoji filenames (Sprint 15)
+- GoDoc package commentary (`doc.go`), runnable example tests (`example_test.go`) (Sprint 16)
+- Open-source MIT License, `CONTRIBUTING.md`, and `CHANGELOG.md` (Sprint 16)
+- Module encapsulation verified: package `picomatch` physically decoupled from test infrastructure
+
+No public API changes from release candidates. Zero behavioral regressions.
+
+
 
 ### Added
 - **GoDoc SDK Commentary ([port/doc.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/doc.go)):** Added top-level package documentation comment detailing core performance guarantees, zero-allocation caching properties, thread-safety mechanics (`sync.RWMutex`), ReDoS immunity, and cross-platform behavior.

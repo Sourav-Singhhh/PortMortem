@@ -4,43 +4,43 @@ Repository:
 Port Mortem
 
 Commit:
-949bd61
+f898613
 
 Tag:
-v1.1.0
+v1.1.0-1-gf898613
 
 Environment:
 go1.26.5 / Node.js v22.21.0 / windows/amd64
 
 Start Time:
-2026-08-02T12:11:36Z
+2026-08-02T16:04:53Z
 
 End Time:
-2026-08-02T12:12:36Z
+2026-08-02T16:05:03Z
 
 Duration:
-60.00s
+10.00s
 
 Seed:
 1337
 
 Total Generated Inputs:
-216648
+71384
 
 Shared API Comparisons:
-201212
+66419
 
 Shared API Agreement:
-197465
+65221
 
 Documented RE2 Adaptations:
-3672
+1177
 
 Documented Security Adaptations:
-75
+21
 
 Excluded Invalid Inputs:
-15436
+4965
 
 Unexpected Divergences:
 0
@@ -52,7 +52,7 @@ Node Failures:
 0
 
 Throughput:
-3610.77 comparisons/sec
+7138.16 comparisons/sec
 
 Final Status:
 DIFFERENTIAL FUZZ SURVIVOR PASSED
