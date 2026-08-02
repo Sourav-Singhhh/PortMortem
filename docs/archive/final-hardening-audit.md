@@ -1,4 +1,4 @@
-# Port Mortem — Final Submission Hardening & Evidence Integrity Audit
+﻿# Port Mortem â€” Final Submission Hardening & Evidence Integrity Audit
 
 **Document Type**: Engineering Evidence Integrity & Submission Hardening Audit  
 **Target Repository**: Port Mortem (`github.com/Sourav-Singhhh/PortMortem`)  
@@ -47,7 +47,7 @@ Every factual claim in the repository is classified under one of four strict evi
 | :---: | :--- | :--- |
 | **[MEASURED]** | Directly measured from executed commands during audit sessions. | 100% of benchmark latency (`ns/op`), memory (`B/op`), heap allocs (`allocs/op`), throughput (`matches/sec`), test coverage (91.1%), and survivor input counts (3.208M) are tagged as **[MEASURED]**. |
 | **[OBSERVED]** | Observed directly from repository source state or directory structure. | File paths, module structures, git SHAs, tag lists, CI workflows, and code line counts are tagged as **[OBSERVED]**. |
-| **[DOCUMENTED]** | Preserved historical records from previous sprint releases. | Sprint 13 pre-optimization baselines (commit `07652dc` in `BENCHMARKS.md` §4) and historical ADRs in `DECISIONS.md` are tagged as **[DOCUMENTED]**. |
+| **[DOCUMENTED]** | Preserved historical records from previous sprint releases. | Sprint 13 pre-optimization baselines (commit `07652dc` in `BENCHMARKS.md` Â§4) and historical ADRs in `DECISIONS.md` are tagged as **[DOCUMENTED]**. |
 | **[INFERRED]** | Architectural deductions or logical reasoning without direct timing measurements. | General structural comparisons (e.g., Go compiled execution vs V8 bytecode interpretation overhead) are strictly tagged as **[INFERRED]**. |
 
 ---
@@ -79,7 +79,7 @@ All benchmark numbers reflect fresh 3-round empirical measurements (`benchmark-v
 | **`BenchmarkNestedExtglobs`** | **461.6 ns/op** | **0 B/op** | **0 allocs/op** | RE2 Set-Difference ($A \setminus B$) Resolution |
 | **`BenchmarkPOSIXClasses`** | **477.9 ns/op** | **0 B/op** | **0 allocs/op** | Static Table Lookup (`[:alnum:]`) |
 | **`BenchmarkLargeDirectoryPatterns`** | **598.3 ns/op** | **0 B/op** | **0 allocs/op** | Multi-Tiered File Path Matching |
-| **`BenchmarkDeepGlobstars`** | **1,141.3 ns/op** | **0 B/op** | **0 allocs/op** | Deep Globstar ReDoS Immune (<1.2 µs) |
+| **`BenchmarkDeepGlobstars`** | **1,141.3 ns/op** | **0 B/op** | **0 allocs/op** | Deep Globstar ReDoS Immune (<1.2 Âµs) |
 | **`BenchmarkCompile_Uncached`** | **4,459.7 ns/op** | **3,770 B/op** | **54 allocs/op** | Cold Single-Pass AST Construction |
 | **Upstream Node.js Picomatch** | **Not measured during this audit.** | **Not measured during this audit.** | **Not measured during this audit.** | Policy compliant: V8 timing was not executed |
 
@@ -103,11 +103,11 @@ All benchmark numbers reflect fresh 3-round empirical measurements (`benchmark-v
 
 Scored across 8 core repository organization and maintainability dimensions:
 
-| Category | Score (0–100) | Evaluator Notes |
+| Category | Score (0â€“100) | Evaluator Notes |
 | :--- | :---: | :--- |
 | **Folder Layout & Encapsulation** | **98 / 100** | Production code cleanly encapsulated in `port/` module; IPC daemons decoupled in `tests/adapter/`. |
 | **Code Organization & Go Idioms** | **98 / 100** | Standard Go project layout, idiomatic error handling, explicit types, memory-safe slice bounds guards. |
-| **Release & Git Tag Quality** | **97 / 100** | Clean SemVer progression (`v1.0.0` → `v1.0.1` → `v1.1.0` → `v1.1.1`). Signed tags and GitHub release notes. |
+| **Release & Git Tag Quality** | **97 / 100** | Clean SemVer progression (`v1.0.0` â†’ `v1.0.1` â†’ `v1.1.0` â†’ `v1.1.1`). Signed tags and GitHub release notes. |
 | **Commit History Clarity** | **96 / 100** | Linear commit history with conventional commit prefixing (`fix:`, `feat:`, `docs:`, `ci:`). |
 | **Documentation Completeness** | **96 / 100** | Comprehensive registry covering architecture, ADRs, release plans, benchmarks, and verification audits. |
 | **Continuous Integration (CI)** | **98 / 100** | Multi-OS Actions pipeline (`ubuntu-latest`, `windows-latest`, `macos-latest`) testing build, vet, test, fuzzing. |

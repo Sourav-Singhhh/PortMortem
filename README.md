@@ -188,6 +188,12 @@ Port Mortem enforces continuous automated quality assurance via GitHub Actions (
 ---
 
 ## Documentation Registry
+- **[docs/verification/README.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/README.md):** Master verification landing page, recommended judge reading order, and document index.
+- **[docs/verification/final-submission-audit.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/final-submission-audit.md):** Final hackathon judge evaluation report (Score: 97.7 / 100, 12 scored categories).
+- **[docs/verification/final-release-verification.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/final-release-verification.md):** Pre-submission release engineering verification & SemVer certification for tag `v1.1.2`.
+- **[docs/verification/benchmark-validation.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/benchmark-validation.md):** Publication-quality fresh 3-round empirical benchmark validation report (`228.4 ns/op`, `0 B/op, 0 allocs`).
+- **[docs/verification/reproducibility-audit.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/reproducibility-audit.md):** Clean-room reproducibility audit certificate (7/7 steps passed in 88.60s).
+- **[docs/verification/developer-experience-audit.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/developer-experience-audit.md):** Developer experience, Makefile targets, and helper scripts audit.
 - **[DECISIONS.md](file:///C:/Users/rajpu/Desktop/PortMortem/DECISIONS.md):** Complete architectural decisions log detailing design rationale, RE2 compatibility strategies, validation taxonomy, benchmark trade-offs, and rejected alternatives.
 - **[RELEASE_PLAN.md](file:///C:/Users/rajpu/Desktop/PortMortem/RELEASE_PLAN.md):** Master v1.0 release candidate planning document, governance models, and release checklists.
 - **[BENCHMARKS.md](file:///C:/Users/rajpu/Desktop/PortMortem/BENCHMARKS.md):** Complete benchmark methodology, quantitative execution tables, hardware environment specifications, comparative baselines, and performance analyses.
@@ -195,7 +201,4 @@ Port Mortem enforces continuous automated quality assurance via GitHub Actions (
 - **[ARCHITECTURE.md](file:///C:/Users/rajpu/Desktop/PortMortem/ARCHITECTURE.md):** High-level system design, module dependency graphs, and structural paradigms.
 - **[CHANGELOG.md](file:///C:/Users/rajpu/Desktop/PortMortem/CHANGELOG.md):** Master repository changelog tracking architectural progress, release candidate highlights, and version evolution.
 - **[CONTRIBUTING.md](file:///C:/Users/rajpu/Desktop/PortMortem/CONTRIBUTING.md):** Formal open-source contributor governance guidelines, design principles, and verification testing pipelines.
-- **[LICENSE](file:///C:/Users/rajpu/Desktop/PortMortem/LICENSE):** Open-source MIT License terms crediting both Port Mortem maintainers and original Node.js reference authors.
-- **[docs/verification/benchmark-report.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/benchmark-report.md):** Authoritative Sprint 13 quantitative benchmark verification report and batch throughput evaluations.
-- **[docs/verification/profile-report.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/profile-report.md):** Exhaustive toolchain profiling report covering CPU, memory allocation, heap space, and mutex synchronization hotspots under strict forensic taxonomy classifications.
-- **[docs/verification/cross-platform-validation.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/cross-platform-validation.md):** Authoritative Sprint 15 cross-platform compatibility audit report detailing all 17 validation dimensions, divergence classifications, defect resolutions, and verification results.
+- **[LICENSE](file:///C:/Users/rajpu/Desktop/PortMortem/LICENSE):** Open-source MIT License terms crediting both Port Mortem maintainers and original Node.js reference authors.

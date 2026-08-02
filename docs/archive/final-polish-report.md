@@ -1,8 +1,8 @@
-# Port Mortem — Final Submission Polish Report
+﻿# Port Mortem â€” Final Submission Polish Report
 
 **Document Type**: Engineering Polish & Evaluator Onboarding Certification  
 **Target Repository**: Port Mortem (`github.com/Sourav-Singhhh/PortMortem`)  
-**Sprint**: Sprint 21 — Final Submission Polish  
+**Sprint**: Sprint 21 â€” Final Submission Polish  
 **Audit Date**: August 2, 2026  
 **Auditing Body**: Independent Technical Documentation & Release Engineering Panel  
 
@@ -59,11 +59,11 @@ The sprint focused on enhancing evaluator onboarding experience, verifying docum
 | :--- | :---: | :--- |
 | [`README.md`](file:///C:/Users/rajpu/Desktop/PortMortem/README.md) | Modified | Added prominent `Quick Start & Developer Usage` callout for `cd port` command execution. |
 | [`docs/verification/benchmark-validation.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/benchmark-validation.md) | Added | Publication-quality 3-round fresh empirical benchmark report with explicit evidence taxonomy tags. |
-| [`docs/verification/documentation-audit.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/documentation-audit.md) | Added | Repository-wide documentation audit certifying zero broken links and 100% command accuracy across 31 Markdown files. |
-| [`docs/verification/final-hardening-audit.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/final-hardening-audit.md) | Added | Pre-submission evidence integrity & hardening audit certificate (Score: 97.7 / 100). |
+| [`docs/archive/documentation-audit.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/archive/documentation-audit.md) | Added | Repository-wide documentation audit certifying zero broken links and 100% command accuracy across 31 Markdown files. |
+| [`docs/archive/final-hardening-audit.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/archive/final-hardening-audit.md) | Added | Pre-submission evidence integrity & hardening audit certificate (Score: 97.7 / 100). |
 | [`docs/verification/final-submission-audit.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/final-submission-audit.md) | Added | Final hackathon submission audit report evaluating 12 engineering categories. |
 | [`docs/verification/reproducibility-audit.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/reproducibility-audit.md) | Added | Clean-room fresh clone reproducibility certificate (7/7 steps passed in 88.60s). |
-| [`docs/verification/final-polish-report.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/final-polish-report.md) | Added | This document. |
+| [`docs/archive/final-polish-report.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/archive/final-polish-report.md) | Added | This document. |
 
 ---
 
@@ -73,9 +73,9 @@ In accordance with Sprint 21 rules, only lightweight build and test verification
 
 | Command Line | Directory | Result | Time |
 | :--- | :---: | :---: | :---: |
-| `git status` | Repo Root | ✅ PASS | Untracked files staged cleanly |
-| `go build ./...` | `port/` | ✅ PASS | Clean build in 2.2s |
-| `go test ./...` | `port/` | ✅ PASS | 100% pass rate (`port` in 2.865s, `port/fuzz_survivor` in 1.247s) |
+| `git status` | Repo Root | âœ… PASS | Untracked files staged cleanly |
+| `go build ./...` | `port/` | âœ… PASS | Clean build in 2.2s |
+| `go test ./...` | `port/` | âœ… PASS | 100% pass rate (`port` in 2.865s, `port/fuzz_survivor` in 1.247s) |
 
 ---
 

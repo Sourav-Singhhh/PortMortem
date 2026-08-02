@@ -5,7 +5,7 @@
 **Sprint**: 20 — Repository Cleanup, Documentation Synchronization & Release Preparation
 **Audit Date**: 2026-08-02
 **Auditing Body**: Independent Principal Go Engineering Review Board
-**Input Audit**: [docs/verification/repository-consistency-audit.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/repository-consistency-audit.md)
+**Input Audit**: [docs/archive/repository-consistency-audit.md](file:///C:/Users/rajpu/Desktop/PortMortem/docs/archive/repository-consistency-audit.md)
 
 ---
 
@@ -42,7 +42,7 @@ Sprint 20 resolved every CRITICAL and HIGH issue identified in the repository co
 | `RELEASE_PLAN.md` | Document status header updated: phase from "Sprint 15" → "Sprint 20 Complete"; release target from `v1.0.0` → `v1.1.0`; matcher status updated to note HandleDot fix; fuzz survivor statistics added |
 | `BENCHMARKS.md` | Section 4 Sprint 13 table labelled as `[DOCUMENTED] Historical Baseline — pre-Sprint 14` with explicit note that `BenchmarkCompile_Cached` and `BenchmarkMatch_OneOff` were optimised to 0-alloc in Sprint 14 |
 | `docs/verification/final-equivalence-report.md` | Regenerated (was untracked from prior audit session) — internally consistent, all claims evidence-labelled |
-| `docs/verification/repository-consistency-audit.md` | New: produced by Sprint 20 audit (this document's input) |
+| `docs/archive/repository-consistency-audit.md` | New: produced by Sprint 20 audit (this document's input) |
 
 ---
 
@@ -99,7 +99,7 @@ All key paths: **0 B/op, 0 allocs/op** confirmed. Deep globstars under 1 µs. Ba
  M port/fuzz_survivor/logs/survivor_report.md   ← Updated by final survivor run
  M port/parse_wildcards.go                      ← HandleDot bug fix (verified)
 ?? docs/verification/final-equivalence-report.md  ← Regenerated report (untracked → stage)
-?? docs/verification/repository-consistency-audit.md  ← New audit document (stage)
+?? docs/archive/repository-consistency-audit.md  ← New audit document (stage)
 ```
 
 ### Deleted (confirmed gone)
@@ -181,7 +181,7 @@ fix: finalize post-v1.1.0 verification fixes and repository synchronization
 - Delete stray investigation artefacts: scratch_repro.go, scratch_repro.js
 
 - Add: docs/verification/final-equivalence-report.md (regenerated)
-- Add: docs/verification/repository-consistency-audit.md (Sprint 20 audit)
+- Add: docs/archive/repository-consistency-audit.md (Sprint 20 audit)
 ```
 
 ### Recommended Tag
