@@ -43,22 +43,24 @@ func HandleBracketTraversal(s *ParseState, value string) (bool, error) {
 					prev.Posix = true
 					if strings.Contains(inner, ":") {
 						idx := strings.LastIndex(prev.Value, "[")
-						pre := prev.Value[:idx]
-						rest := prev.Value[idx+2:]
-						if posix, ok := GetPosixRegexSource(rest); ok {
-							prev.Value = pre + posix
-							s.Backtrack = true
-							s.Advance()
+						if idx >= 0 && idx+2 <= len(prev.Value) {
+							pre := prev.Value[:idx]
+							rest := prev.Value[idx+2:]
+							if posix, ok := GetPosixRegexSource(rest); ok {
+								prev.Value = pre + posix
+								s.Backtrack = true
+								s.Advance()
 
-							if len(s.Tokens) > 1 && s.Tokens[1] == prev {
-								bos := s.Tokens[0]
-								if !bos.OutputSet && bos.Output == "" {
-									chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
-									bos.Output = chars.OneChar
-									bos.OutputSet = true
+								if len(s.Tokens) > 1 && s.Tokens[1] == prev {
+									bos := s.Tokens[0]
+									if !bos.OutputSet && bos.Output == "" {
+										chars := GetGlobChars(s.Opts != nil && s.Opts.Windows)
+										bos.Output = chars.OneChar
+										bos.OutputSet = true
+									}
 								}
+								return true, nil
 							}
-							return true, nil
 						}
 					}
 				}
