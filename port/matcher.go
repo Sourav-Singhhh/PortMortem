@@ -217,6 +217,9 @@ func toRE2(source string, opts *ParseOptions, chars *GlobChars) string {
 	source = strings.ReplaceAll(source, `(?!(?:^|[\/])\.{1,2}(?:[\/]|$))`, "")
 	source = strings.ReplaceAll(source, `(?!\.{0,1}(?:[\/]|$))`, "")
 	source = strings.ReplaceAll(source, `(?!\.{1,2}(?:[\/]|$))`, "")
+	source = strings.ReplaceAll(source, `(?!(?:^|[\\/])\.{1,2}(?:[\\/]|$))`, "")
+	source = strings.ReplaceAll(source, `(?!\.{0,1}(?:[\\/]|$))`, "")
+	source = strings.ReplaceAll(source, `(?!\.{1,2}(?:[\\/]|$))`, "")
 	source = strings.ReplaceAll(source, `(?!(?:^|\\/)\.{1,2}(?:\\/|$))`, "")
 	source = strings.ReplaceAll(source, `(?!\.{0,1}(?:\\/|$))`, "")
 	source = strings.ReplaceAll(source, `(?!\.{1,2}(?:\\/|$))`, "")
@@ -226,6 +229,8 @@ func toRE2(source string, opts *ParseOptions, chars *GlobChars) string {
 	source = strings.ReplaceAll(source, `(?:(?!(?:^|\/)\.{1,2}(?:\/|$)).)*?`, `.*?`)
 	source = strings.ReplaceAll(source, `(?:(?!(?:^|[\/])\.).)*?`, `.*?`)
 	source = strings.ReplaceAll(source, `(?:(?!(?:^|[\/])\.{1,2}(?:[\/]|$)).)*?`, `.*?`)
+	source = strings.ReplaceAll(source, `(?:(?!(?:^|[\\/])\.).)*?`, `.*?`)
+	source = strings.ReplaceAll(source, `(?:(?!(?:^|[\\/])\.{1,2}(?:[\\/]|$)).)*?`, `.*?`)
 	source = strings.ReplaceAll(source, `(?:(?!(?:^|\\/)\.).)*?`, `.*?`)
 	source = strings.ReplaceAll(source, `(?:(?!(?:^|\\/)\.{1,2}(?:\\/|$)).)*?`, `.*?`)
 
