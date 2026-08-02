@@ -228,11 +228,11 @@ The following release checklist categorizes all verification criteria across fun
 #### Category 5: Documentation
 - [x] Module statement code coverage maintained above strict high-confidence threshold (**90.7%** statement coverage achieved across primary packages)
 - [x] Performance baseline registries and profiling taxonomy synchronized across `README.md`, `BENCHMARKS.md`, and `docs/verification/` *(Completed Sprints 13–15)*
-- [ ] Public package identifier comments synchronized with GoDoc server documentation standards *(Planned Phase G)*
-- [ ] CHANGELOG.md drafted detailing comprehensive architectural history and version features *(Planned Phase G)*
+- [x] Public package identifier comments synchronized with GoDoc server documentation standards ([port/doc.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/doc.go), [port/example_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/example_test.go)) *(Completed Phase G / Sprint 16)*
+- [x] CHANGELOG.md drafted detailing comprehensive architectural history and version features ([CHANGELOG.md](file:///C:/Users/rajpu/Desktop/PortMortem/CHANGELOG.md)) *(Completed Phase G / Sprint 16)*
 
 #### Category 6: Release Packaging
-- [ ] Production build binaries trimmed of all testing frameworks and debugging infrastructure dependencies *(Planned Phase F)*
+- [x] Production build binaries trimmed of all testing frameworks and debugging infrastructure dependencies via clean module encapsulation in `port/go.mod` *(Completed Phase F / Sprint 16)*
 - [ ] Release tag version number finalized and signed (`v1.0.0`) *(Planned Phase H)*
 
 #### Category 7: Repository
@@ -253,10 +253,10 @@ This dedicated checklist tracks tangible project deliverables, distinguishing co
 | **Persistent Test Bridge (`tests/adapter/`)** | **Completed** | Operates over IO streaming JSON across scanner and large-scale matcher engines (3,226 evaluation cases). |
 | **Benchmark & Profiling Infrastructure** | **Completed** | 16 evaluation targets in [port/matcher_bench_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher_bench_test.go) with complete pprof diagnostic reports (`benchmark-report.md`, `profile-report.md`). |
 | **Benchmarks & Evaluation Tables** | **Completed** | Quantitative execution runtime speed and zero-allocation testing tables in `BENCHMARKS.md` and `docs/verification/benchmark-report.md`. |
-| **Release Notes (`CHANGELOG.md`)** | **Pending** | Comprehensive historical sprint evolution and feature highlights document scheduled for Planned Phase G via Sprint 16. |
-| **Git Version Tag** | **Pending** | Signed semantic git release tagging (`v1.0.0-rc2` leading to `v1.0.0`) scheduled for Planned Phase H via Sprint 16. |
+| **Release Notes (`CHANGELOG.md`)** | **Completed** | Comprehensive historical sprint evolution and version highlights documented in [CHANGELOG.md](file:///C:/Users/rajpu/Desktop/PortMortem/CHANGELOG.md) *(Completed Phase G / Sprint 16)*. |
+| **Git Version Tag** | **Pending** | Signed semantic git release tagging (`v1.0.0-rc3` leading to `v1.0.0`) scheduled for Planned Phase H via Sprint 16. |
 | **GitHub Release Publication** | **Pending** | Production distribution asset publishing across open-source hosting servers scheduled for Planned Phase H via Sprint 16. |
-| **License Verification** | **Pending** | Audit confirming open-source licensing attribution parity with upstream reference codebase prior to public packaging scheduled for Planned Phase G via Sprint 16. |
+| **License Verification** | **Completed** | Audit confirming open-source MIT licensing attribution parity with upstream reference codebase verified in root [LICENSE](file:///C:/Users/rajpu/Desktop/PortMortem/LICENSE) *(Completed Phase G / Sprint 16)*. |
 | **Repository Cleanup** | **Ongoing** | Verification that zero compiled `.exe` files, test logs, coverage profiles, or scratch artifacts taint the working tree. |
 | **Final Verification Pipeline** | **Ongoing** | Execution of clean quality gates (`go clean -cache`, `go clean -testcache`, `gofmt -w .`, `go vet ./...`, `go test ./...`) across all module builds prior to tag creation. |
 
