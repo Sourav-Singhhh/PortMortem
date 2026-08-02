@@ -1,5 +1,7 @@
 # Port Mortem 2026: High-Performance Picomatch Go Port
 
+[![Continuous Integration](https://github.com/Sourav-Singhhh/PortMortem/actions/workflows/ci.yml/badge.svg)](https://github.com/Sourav-Singhhh/PortMortem/actions/workflows/ci.yml)
+
 A robust, memory-safe, and behaviorally equivalent Go port of the JavaScript `picomatch` glob matching library, engineered for the Port Mortem 2026 migration initiative.
 
 ---
@@ -9,13 +11,14 @@ Port Mortem bridges the gap between JavaScript's complex globbing heuristics and
 
 ---
 
-#### Current Implementation Status (Through Sprint 17 — Differential Fuzz Testing & Parser Hardening Complete)
+#### Current Implementation Status (Through Sprint 18 — Continuous Integration & Automated Validation Complete)
 - **Scanner Core ([port/scan.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/scan.go)):** Fully implemented and certified. Traverses raw glob expressions in a single-pass loop to isolate base directories, evaluate prefix logic (`!`, `./`), and establish grammar flags (`isBrace`, `isBracket`, `isExtglob`, `isGlobstar`).
 - **Parser Core & Regex Synthesis ([port/parse.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse.go), [parse_literals.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_literals.go), [parse_brackets.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_brackets.go), [parse_braces.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_braces.go), [parse_extglobs.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_extglobs.go), [parse_wildcards.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_wildcards.go), [parse_regex.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_regex.go)):** Fully implemented, hardened, and certified. Features foundational data models (`ParseState`, `ParseToken`, `ParseOptions`), memory-safe cursor navigation, single-pass interleaved character evaluation, POSIX character class translation tables (`[:alnum:]`, `[:digit:]`), numerical and alphabetical brace interval range expansions (`{1..5}`, `{a..z}`), extglob pattern synthesis (`(?:...)`, `(?!(?:...))`), ReDoS exponential backtracking mitigation (`AnalyzeRepeatedExtglob`), and EOF delimiter reconciliation (`EscapeLast`). Surgically hardened against slice bounds panics in bracket parsing (`HandleBracketTraversal`). Zero `TODO` or placeholder implementations remain.
 - **Runtime Matcher & Evaluation API ([port/matcher.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher.go)):** Fully implemented and certified. Provides exported evaluation functions (`Compile()`, `Match()`, and the reusable `Matcher` struct), thread-safe structural pattern compilation caching (`sync.RWMutex`), literal direct-equality fastpaths, and zero-allocation path segmentation checks (`validateDotAndSpecialDirs`). Solves Go RE2 regex limitations without CGO or PCRE dependencies by combining linear-time lookaround stripping (`toRE2`) with recursive set-difference pattern decomposition ($* \setminus @(X)$).
 - **Performance Optimization & Zero-Allocation Caching ([port/matcher.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher.go), [port/parse_helpers.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_helpers.go)):** Fully implemented and verified. Implements a two-tier compilation dictionary featuring a string fastpath map (`cacheNilOpts`) and comparable bit-packed value structs (`cacheKeyStruct`), eradicating string formatting memory overhead and dropping cached compilations and one-off matcher executions directly to **`0 B/op, 0 allocs/op`** (yielding an **87.1% latency speedup**). Incorporates AST slice starting capacities and slice truncation reuse across tracking stacks (`s.items[:0]`), reducing error recovery allocations without altering syntactic behavior.
 - **Cross-Platform Compatibility & Path Normalization ([port/platform_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/platform_test.go), [port/path_normalization_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/path_normalization_test.go), [port/unicode_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/unicode_test.go)):** Fully implemented, verified, and certified across Windows, Linux, and macOS filesystem targets. Evaluates Windows drive letters (`C:\`), UNC network share nodes (`\\server\share`), POSIX hierarchies (`/var/log/*`), mixed path separator normalization (`\` to `/`), trailing directory slash allowance versus `StrictSlashes: true`, leading relative dot-slash stripping, multibyte Unicode scripts (Cyrillic, CJK, Accented Latin), emoji filenames, and UTF-8 NFC/NFD byte equality. Incorporates bracketed separator character class handling (`[\\/]`) in Windows globstars with zero runtime benchmark regressions against baseline.
 - **Differential Fuzz Testing Infrastructure ([port/fuzz_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/fuzz_test.go), [fuzz/README.md](file:///C:/Users/rajpu/Desktop/PortMortem/fuzz/README.md)):** Fully implemented and certified in Sprint 17 using native Go fuzzing (`testing.F`). Features three native fuzz targets (`FuzzCompile`, `FuzzMatch`, `FuzzDifferentialMatcher`), seed corpora covering Windows/UNC/Unicode/emojis, live stdio IPC streaming differential fuzzing against Node.js `picomatch` v3.0.1, version-controlled regression inputs (`port/testdata/fuzz/`), and 1.02M+ mutation iterations with 0 panics or unhandled defects.
+- **Continuous Integration Pipeline ([.github/workflows/ci.yml](file:///C:/Users/rajpu/Desktop/PortMortem/.github/workflows/ci.yml)):** Production-grade GitHub Actions CI pipeline executing multi-platform build, static analysis (`gofmt`, `go vet`), unit/differential testing, and fuzz smoke testing across Ubuntu, Windows, and macOS virtual runners.
 - **Persistent Cross-Language Bridge (`tests/adapter/`):** Implemented high-speed inter-process communication (IPC) daemon communicating with native Node.js binaries via JSON over standard IO for automated differential verification across scanner, matcher, and fuzzing engines.
 - **Large-Scale Validation & Benchmarking Suite ([port/matcher_diff_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher_diff_test.go), [port/matcher_bench_test.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/matcher_bench_test.go)):** Fully implemented, audited, and profiled. Subjects the runtime engine to 3,226 rigorous differential test scenarios across 14 architectural categories, alongside comprehensive standard library benchmark frameworks spanning 16 empirical operational dimensions.
 
@@ -75,9 +78,25 @@ Port Mortem unites a single-pass interleaved parser engine with a multi-tiered r
 
 ---
 
+## Continuous Integration & Automated Validation (CI/CD)
+
+Port Mortem enforces continuous automated quality assurance via GitHub Actions ([.github/workflows/ci.yml](file:///C:/Users/rajpu/Desktop/PortMortem/.github/workflows/ci.yml)). Every commit push and pull request targeted at `main` or `develop` triggers automated matrix builds across three operating system topologies:
+
+- **Supported Runner OS Matrix:** `ubuntu-latest`, `windows-latest`, `macos-latest`
+- **Go Toolchain:** Go `1.22.x` (with automatic module dependency caching)
+
+### Automated CI Validation Stages
+1. **Source Code Formatting Verification (`gofmt`):** Ensures all Go files strictly adhere to standard `gofmt` indentation and syntax formatting conventions.
+2. **Static Analysis & Safety Auditing (`go vet`):** Scans package code for potential bugs, dead code, implicit conversions, or structural issues.
+3. **Module Compilation (`go build`):** Verifies clean compilation of package `picomatch` across Linux, Windows, and macOS environments.
+4. **Test Suite & Regression Corpus (`go test`):** Runs the complete test suite (`unit`, `platform`, `unicode`, `path_normalization`, `ReDoS`, `differential`, and `testdata/fuzz` version-controlled regression inputs) with `-count=1`.
+5. **Fuzzing Smoke Test (`FuzzCompile`):** Executes a deterministic 5-second native Go fuzzing run to ensure continuous parser bounds safety.
+
+---
+
 ## Release Readiness & Roadmap Summary
 
-### Completed Milestones (Syntax, Runtime, Validation, Benchmarks, Optimization, Cross-Platform & Fuzz Testing: 100% Complete)
+### Completed Milestones (Syntax, Runtime, Validation, Benchmarks, Optimization, Cross-Platform, Fuzzing & CI: 100% Complete)
 - [x] **Scanner Core Migration (Sprints 1–2):** Single-pass fast scanner and persistent IPC testing bridge.
 - [x] **Parser Migration & Regex Synthesis (Sprints 3–10):** Foundational models, cursor abstraction, literal handling, bracket and brace balancing, extglob synthesis, wildcard collapsing, POSIX classes, range expansions, ReDoS defense, and zero-TODO closure.
 - [x] **Matcher Integration (Sprint 11):** Exported evaluation API (`Compile()`, `Match()`), thread-safe option caching, zero-allocation segment validation, and RE2 set-difference lookahead resolution.
@@ -87,9 +106,7 @@ Port Mortem unites a single-pass interleaved parser engine with a multi-tiered r
 - [x] **Cross-Platform Validation & Compatibility Verification (Sprint 15):** Comprehensive standard library validation across Windows drive letters (`C:\`), UNC paths, Linux POSIX roots, macOS hierarchies, mixed path separator normalization, trailing directory slashes, multibyte Unicode scripts, and emoji filenames without benchmark regressions.
 - [x] **Release Stabilization, Module Packaging & Documentation Polish (Sprint 16):** Verified clean physical module encapsulation separating production package `picomatch` from internal testing daemons (`tests/adapter/`); created authoritative GoDoc package commentary (`doc.go`) and verified runnable example tests (`example_test.go`); published comprehensive project changelogs (`CHANGELOG.md`), contributor governance guidelines (`CONTRIBUTING.md`), and open-source licensing attribution (`LICENSE`).
 - [x] **Differential Fuzz Testing & Parser Hardening (Sprint 17):** Implemented native Go fuzzing (`testing.F`) across three fuzz targets (`FuzzCompile`, `FuzzMatch`, `FuzzDifferentialMatcher`), discovered and fixed POSIX bracket slice bounds panic in `HandleBracketTraversal`, added version-controlled regression corpus (`port/testdata/fuzz/`), and verified 1.02M+ fuzz mutations with 0 panics.
-
-### Remaining Milestones (Planned Sprint 18: CI Automation & GitHub Actions)
-- [ ] **Continuous Integration Automation (Sprint 18):** Create `.github/workflows/ci.yml` executing automated multi-OS build, test, and benchmark verification across Linux, Windows, and macOS virtual runners.
+- [x] **Continuous Integration & Automated Validation (Sprint 18):** Implemented production GitHub Actions CI pipeline ([.github/workflows/ci.yml](file:///C:/Users/rajpu/Desktop/PortMortem/.github/workflows/ci.yml)) executing automated multi-OS build, formatting, static analysis, unit test, and fuzz smoke testing across Ubuntu, Windows, and macOS virtual runners.
 
 ---
 
