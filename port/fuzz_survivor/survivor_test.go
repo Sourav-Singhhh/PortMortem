@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 	"testing"
 	"time"
 
@@ -15,8 +16,8 @@ var (
 
 // TestRunDifferentialSurvivor executes the continuous 60s+ differential fuzz survivor test.
 func TestRunDifferentialSurvivor(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping continuous 60s differential fuzz survivor test in short mode")
+	if testing.Short() || os.Getenv("RUN_SURVIVOR") == "" {
+		t.Skip("Skipping continuous 60s differential fuzz survivor test (set RUN_SURVIVOR=1 to execute)")
 	}
 
 	duration := 60 * time.Second

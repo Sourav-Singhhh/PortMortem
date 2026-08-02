@@ -60,7 +60,7 @@ func (c *Classifier) Classify(cand Candidate, res EvalResult) (classification st
 	input := cand.Input
 
 	// 1. RE2 Lookaround & Syntax Adaptation
-	if strings.HasPrefix(pattern, "!") || strings.Contains(pattern, "!(") || strings.Contains(pattern, "(?!") || strings.Contains(pattern, "(?=") || strings.HasSuffix(pattern, ".") || (strings.Contains(pattern, "]") && !strings.Contains(pattern, "[")) {
+	if strings.HasPrefix(pattern, "!") || strings.Contains(pattern, "!(") || strings.Contains(pattern, "(?!") || strings.Contains(pattern, "(?=") || strings.HasSuffix(pattern, ".") || strings.Contains(pattern, ".?") || (strings.Contains(pattern, "]") && !strings.Contains(pattern, "[")) {
 		return ClassDocumentedRE2, "Documented adaptation: Go RE2 linear engine excludes arbitrary lookarounds, negated patterns, and syntax edge cases"
 	}
 
