@@ -11,6 +11,27 @@ Port Mortem bridges the gap between JavaScript's complex globbing heuristics and
 
 ---
 
+## Quick Start & Developer Usage
+
+> [!IMPORTANT]
+> The production Go package `picomatch` is physically encapsulated within the `port/` module directory (`github.com/Sourav-Singhhh/PortMortem/port`). All Go toolchain commands (`go build`, `go test`, `go test -bench`, `go run`) must be executed from inside `port/`:
+>
+> ```bash
+> cd port
+>
+> # 1. Build package module
+> go build ./...
+>
+> # 2. Execute unit, platform, unicode, ReDoS, and differential tests
+> go test -v -count=1 ./...
+>
+> # 3. Execute differential fuzz survivor engine (30s)
+> go run ./fuzz_survivor -duration=30s
+> ```
+
+---
+
+
 #### Current Implementation Status (Through Sprint 19 — Differential Fuzz Survivor & Post-Release Verification Complete)
 - **Scanner Core ([port/scan.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/scan.go)):** Fully implemented and certified. Traverses raw glob expressions in a single-pass loop to isolate base directories, evaluate prefix logic (`!`, `./`), and establish grammar flags (`isBrace`, `isBracket`, `isExtglob`, `isGlobstar`).
 - **Parser Core & Regex Synthesis ([port/parse.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse.go), [parse_literals.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_literals.go), [parse_brackets.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_brackets.go), [parse_braces.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_braces.go), [parse_extglobs.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_extglobs.go), [parse_wildcards.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_wildcards.go), [parse_regex.go](file:///C:/Users/rajpu/Desktop/PortMortem/port/parse_regex.go)):** Fully implemented, hardened, and certified. Features foundational data models (`ParseState`, `ParseToken`, `ParseOptions`), memory-safe cursor navigation, single-pass interleaved character evaluation, POSIX character class translation tables (`[:alnum:]`, `[:digit:]`), numerical and alphabetical brace interval range expansions (`{1..5}`, `{a..z}`), extglob pattern synthesis (`(?:...)`, `(?!(?:...))`), ReDoS exponential backtracking mitigation (`AnalyzeRepeatedExtglob`), and EOF delimiter reconciliation (`EscapeLast`). Surgically hardened against slice bounds panics in bracket parsing (`HandleBracketTraversal`). Zero `TODO` or placeholder implementations remain.
