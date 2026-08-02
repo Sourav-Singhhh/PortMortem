@@ -68,14 +68,4 @@ The following architectural audits document parser evolution across development 
 - [`profile-report.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/profile-report.md) — CPU/Memory pprof allocation hotspot profiling
 - [`benchmark-report.md`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/verification/benchmark-report.md) — Historical Sprint 13 baseline benchmark certificate
 
----
 
-## 5. Historical Archive (`docs/archive/`)
-
-Incremental audit certificates from earlier sprint iterations have been moved to [`docs/archive/`](file:///C:/Users/rajpu/Desktop/PortMortem/docs/archive/) to maintain complete historical provenance without cluttering the primary verification folder:
-- `docs/archive/repository-consistency-audit.md`
-- `docs/archive/final-hardening-audit.md`
-- `docs/archive/final-release-readiness-audit.md`
-- `docs/archive/final-polish-report.md`
-- `docs/archive/final-submission-verification-checklist.md`
-- `docs/archive/documentation-audit.md`
