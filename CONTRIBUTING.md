@@ -30,19 +30,60 @@ Preserve absolute synchronization between active source code syntax, exported Go
 
 ## Setting Up Your Development Environment
 
+### Repository Structure & Module Location
+- **Go Module Location:** The production package `picomatch` is physically located in `port/` (`github.com/Sourav-Singhhh/PortMortem/port`).
+- **Master Makefile:** Root-level `Makefile` providing one-command targets (`make build`, `make test`, `make vet`, `make bench`, `make survivor`, `make fuzz`, `make clean`).
+- **Cross-Platform Helper Scripts:** `scripts/` contains Bash (`.sh`) and PowerShell (`.ps1`) build/test/bench wrappers.
+- **Node.js Bridge:** `tests/adapter/` contains the persistent IPC daemon communicating with Node.js `picomatch` v3.0.1.
+
 ### Prerequisites
-- **Go Toolchain:** Go 1.22+ required (developed and certified against Go 1.26+).
-- **Node.js:** Node.js v18+ required for cross-language differential verification bridge execution.
+- **Go Toolchain:** Go 1.22+ required (developed and certified against Go 1.26.5).
+- **Node.js:** Node.js v18+ required **only** for live cross-language IPC differential testing and survivor verification.
 
-### Verification & Testing Pipeline
-Before submitting a Pull Request, execute the complete official project verification pipeline inside the `port/` module directory:
+---
 
+### Official Developer Verification Pipeline
+
+#### Option 1: Master Makefile (Recommended)
+```bash
+# 1. Clean build and test toolchain caches
+make clean
+
+# 2. Perform static analysis and linter checks
+make vet
+
+# 3. Execute unit, platform, Unicode, normalization, ReDoS, and differential test suites
+make test
+
+# 4. Verify computational speed and zero-allocation memory invariants (0 B/op)
+make bench
+
+# 5. Run 60-second differential fuzz survivor engine against Node.js
+make survivor
+```
+
+#### Option 2: Cross-Platform Helper Scripts (`scripts/`)
+- **Linux & macOS (Bash):**
+  ```bash
+  ./scripts/build.sh
+  ./scripts/test.sh
+  ./scripts/bench.sh
+  ./scripts/survivor.sh
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  .\scripts\build.ps1
+  .\scripts\test.ps1
+  .\scripts\bench.ps1
+  .\scripts\survivor.ps1
+  ```
+
+#### Option 3: Direct Go Toolchain Commands (inside `port/`)
 ```bash
 cd port
 
 # 1. Invalidate local test and build toolchain caches
-go clean -cache
-go clean -testcache
+go clean -cache -testcache
 
 # 2. Enforce standard formatting across all Go files
 gofmt -w .
@@ -54,8 +95,24 @@ go vet ./...
 go test -count=1 -v ./...
 
 # 5. Verify computational speed and zero-allocation memory invariants
-go test -bench . -benchmem
+go test -bench="." -benchmem
 ```
+
+---
+
+### Coding Style & Performance Guarantees
+- **Formatting:** All Go source code must strictly adhere to `gofmt` indentation standards (`gofmt -w .`).
+- **Zero-Allocation Invariants:** All precompiled, cached, and casual helper invocations must maintain **`0 B/op, 0 allocs/op`** during runtime execution. Any PR introducing heap allocations to evaluation fastpaths will be rejected.
+- **Linear-Time RE2 Safety:** Do not introduce PCRE or third-party regex engines that compromise RE2 linear-time ReDoS execution guarantees.
+
+---
+
+### Regenerating Verification Reports
+When submitting significant structural changes, update or regenerate verification reports in `docs/verification/`:
+- **Equivalence Report:** `docs/verification/final-equivalence-report.md`
+- **Benchmark Profile:** `docs/verification/benchmark-validation.md`
+- **Reproducibility Audit:** `docs/verification/reproducibility-audit.md`
+
 
 ---
 

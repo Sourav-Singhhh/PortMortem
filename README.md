@@ -11,25 +11,78 @@ Port Mortem bridges the gap between JavaScript's complex globbing heuristics and
 
 ---
 
-## Quick Start & Developer Usage
+## Quick Start & Evaluator Onboarding Guide
 
-> [!IMPORTANT]
-> The production Go package `picomatch` is physically encapsulated within the `port/` module directory (`github.com/Sourav-Singhhh/PortMortem/port`). All Go toolchain commands (`go build`, `go test`, `go test -bench`, `go run`) must be executed from inside `port/`:
->
-> ```bash
-> cd port
->
-> # 1. Build package module
-> go build ./...
->
-> # 2. Execute unit, platform, unicode, ReDoS, and differential tests
-> go test -v -count=1 ./...
->
-> # 3. Execute differential fuzz survivor engine (30s)
-> go run ./fuzz_survivor -duration=30s
-> ```
+### System Requirements & Dependencies
+- **Go Toolchain:** Go `1.22+` required (certified against Go `1.26.5`).
+- **Node.js (Optional):** Node.js `v18+` required **only** for executing live cross-language IPC differential tests against Node.js `picomatch` v3.0.1. Pure Go compilation and unit testing require **zero** Node.js or external dependencies.
+
+### Repository Layout
+- **`port/`:** Independent production Go module (`github.com/Sourav-Singhhh/PortMortem/port`) containing scanner, parser, matcher, tests, benchmarks, and fuzz survivor engine.
+- **`scripts/`:** Cross-platform one-command build/test/bench helper scripts for Linux/macOS (`.sh`) and Windows (`.ps1`).
+- **`tests/adapter/`:** Persistent Node.js IPC bridge daemon for automated differential testing.
+- **`docs/verification/`:** Independent verification reports, benchmark profiles, and audit certificates.
 
 ---
+
+### Execution Method A — One-Command Master Makefile & Scripts (Recommended)
+
+#### Using GNU `make` (Linux, macOS, Windows with Make)
+```bash
+# 1. Build package module
+make build
+
+# 2. Run full test suite (unit, platform, unicode, ReDoS, differential)
+make test
+
+# 3. Execute 16-target performance benchmarks (0 allocs/op)
+make bench
+
+# 4. Execute differential fuzz survivor engine (60s)
+make survivor
+```
+
+#### Using Cross-Platform Helper Scripts
+- **Linux & macOS (Bash):**
+  ```bash
+  ./scripts/build.sh
+  ./scripts/test.sh
+  ./scripts/bench.sh
+  ./scripts/survivor.sh
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  .\scripts\build.ps1
+  .\scripts\test.ps1
+  .\scripts\bench.ps1
+  .\scripts\survivor.ps1
+  ```
+
+---
+
+### Execution Method B — Direct Go Toolchain Invocations
+
+> [!IMPORTANT]
+> The production Go package `picomatch` is physically encapsulated within the `port/` module directory (`github.com/Sourav-Singhhh/PortMortem/port`). When executing raw `go` toolchain commands, navigate into `port/`:
+
+```bash
+cd port
+
+# Build package module
+go build ./...
+
+# Execute test suite
+go test -v -count=1 ./...
+
+# Execute benchmarks
+go test -run="^$" -bench="." -benchmem
+
+# Execute differential fuzz survivor engine (30s)
+go run ./fuzz_survivor -duration=30s
+```
+
+---
+
 
 
 #### Current Implementation Status (Through Sprint 19 — Differential Fuzz Survivor & Post-Release Verification Complete)
