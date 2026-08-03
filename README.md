@@ -28,6 +28,10 @@ Port Mortem bridges the gap between JavaScript's complex globbing heuristics and
 ### Execution Method A — One-Command Master Makefile & Scripts (Recommended)
 
 #### Using GNU `make` (Linux, macOS, Windows with Make)
+
+> [!NOTE]
+> **Windows Users**: If `make` is not installed on your system, use the **Windows PowerShell Scripts** below (`.\scripts\build.ps1`) or **Direct Go Commands** (`cd port && go build ./...`).
+
 ```bash
 # 1. Build package module
 make build
