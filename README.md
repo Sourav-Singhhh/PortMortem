@@ -74,6 +74,10 @@ make survivor
 > [!IMPORTANT]
 > The production Go package `picomatch` is physically encapsulated within the `port/` module directory (`github.com/Sourav-Singhhh/PortMortem/port`). When executing raw `go` toolchain commands, navigate into `port/`:
 
+> [!TIP]
+> **Windows Terminal Path Note**: If your terminal reports `go: term not recognized`, either restart your terminal application to reload environment variables, run `$env:Path += ";C:\Program Files\Go\bin"` in PowerShell, or invoke `"C:\Program Files\Go\bin\go.exe" build ./...`.
+
+
 ```bash
 cd port
 
